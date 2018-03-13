@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <fcntl.h>
 #include <math.h>
-
+#include <string.h>
 //deprecated -- to lurk for more (cf'd from Arduino lib?)
 class GY80 {
 public:
@@ -107,16 +107,21 @@ public:
 	//static void setI2C(IODev dev) { d = dev; }
 	//TODO: multibyte read
 	uint8_t read(uint8_t reg) { 
+		uint8_t buf;
+		mb_read(reg, 1, &buf);
+		return buf;
+	}
+	void mb_read(uint8_t reg_st, uint8_t cnt, uint8_t* buf) {
 		if (d.used()) throw mexception("No multithread");
 		int fd = d.access();
-		uint8_t s = reg; //data
+		uint8_t s = reg_st; //data
 		try {
 			if (lastaddr != a)
 				if (ioctl(fd, I2C_SLAVE, a) < 0)
 					throw mexception("slave select");
 			if (::write(fd,&s,1)!=1) //byte
 				throw mexception("write");
-			if (::read(fd,&s,1)!=1) //byte
+			if (::read(fd,buf,cnt)!=cnt) //bytes
 				throw mexception("read");
 		}
 		catch (mexception & e){ 
@@ -125,18 +130,24 @@ public:
 			throw e;
 		}
 		d.release();
-		return s;		
-	}
+		//printf("read from %x#%x val %x", a,reg_st,*buf);
+	}	
 	//TODO: multibyte write
 	void write(uint8_t reg, uint8_t val) { 
+		mb_write(reg, 1, &val);
+	}
+	void mb_write(uint8_t reg_st, uint8_t cnt, uint8_t* buf) {
+		if (cnt>128) throw mexception("Too much data");
 		if (d.used()) throw mexception("No multithread");
 		int fd = d.access();
-		uint8_t s[2] = {reg, val}; //data
+		uint8_t s[128]; // = {reg, val}; //data
+		s[0] = reg_st;
+		::memcpy(s+1, buf, cnt);
 		try {
 			if (lastaddr != a)
 				if (ioctl(fd, I2C_SLAVE, a) < 0)
 					throw mexception("slave select");
-			if (::write(fd,&s,2)!=2) //byte
+			if (::write(fd,&s,cnt+1)!=cnt+1) //byte
 				throw mexception("write");
 		}
 		catch (mexception & e){ 
@@ -145,14 +156,16 @@ public:
 			throw e;
 		}
 		d.release();
-
 	}
+	
+	
 	virtual void setup() {
 		if (read(whoami_reg)!=whoami_val) 
 			throw mexception("Incorrect device");
 	}
 };
 //TODO: think later on interfaces
+//STM L3G4200D
 class Gyro: /*public Gyroscope,*/ public I2CDev {
 private:
 	// limits ?
@@ -186,10 +199,59 @@ public:
 	}
 };
 
+//ADXL345
+//notes:
+// Freefall, tap thresholds & events [mb use, mb test?]
+class Accel: /*public Accelerometer,*/ public I2CDev {
+private:
+	//limits: 2..16 g
+	//noise: pm40; static pm 250 
+	//TODO: note on diff 'tw XY and Z
+	double resol; //256 LSB per g
+	// I2C -> max for fast 800 Hz, slow 200 Hz
+	double rate; // .1 Hz -> 3200 Hz; <6.3 & >1600 - diff; 
+public:
+	Accel(): I2CDev(0x53) {
+		whoami_reg = 0; whoami_val = 0xE5;
+	}
+	// gettemp()
+	void fetchData(double* arr) {
+		int16_t raw[3];
+		mb_read(0x32, 6, (uint8_t*)(&raw));
+		for (int i = 0; i<3; i++) arr[i]=raw[i]*resol;
+	}
+	bool hasData() {
+		return ((read(0x30) & 0x80) == 0x80);
+	}
+	/// avg data in mg [milli-*g*]
+	void setOffsets(double x, double y, double z) {
+		double scale = 15.6; // mg/LSB
+		int8_t dx = (int8_t)round(-x/scale);
+		int8_t dy = (int8_t)round(-y/scale);
+		int8_t dz = (int8_t)round(-z/scale);
+		// write to OFSX, OFSY, OFSZ
+		write (0x1E, dx);
+		write (0x1F, dy);
+		write (0x20, dz);
+	}
+	virtual void setup() {
+		//selftest?
+		I2CDev::setup();
+		write(0x2D, 0); //POWER_CTL -> standby
+		write(0x2C, 0x0B); //BW_RATE reg; [t7, t8 - hz]
+		rate = 200; //mb int? but 6.25 Hz and lower..
+		write(0x31, 9); //DATA_FORMAT -> [self-test 0x80? 8 - full-res]
+						// 0x1 -- +-4g
+		write(0x38, 0);
+		
+		write(0x2D, 8); //POWER_CTL -> measure
+		resol = 1000./256.; //mid.				
+	}
+};
 IODev I2CDev::d("/dev/i2c-1", O_RDWR);
 uint8_t I2CDev::lastaddr;
 
-int main() {
+int gyro_test() {
 	//I2CDev::setI2C(IODev("/dev/i2c-1", O_RDWR));
 	Gyro gyro;
 	gyro.setup();
@@ -214,4 +276,36 @@ int main() {
 	printf("X: %.2f\tY: %.2f\tZ: %.2f\n", x*0.001, y*0.001, z*0.001);
 }
 	return 0;
+}
+
+//TODO: Vec3D or sth like this
+
+int accel_test() {
+	// 0.1 sec of data [cf Hz]
+	// avg -> minus -> setOffset
+	Accel accel;
+	accel.setup();
+	double deltas[3];
+	double avgs[3];
+	//double xe, ye, ze;
+	for (int i = 0; i < 20; i++) {
+		while (!accel.hasData());
+		accel.fetchData(deltas);
+		for (int j = 0; j < 3; j++) avgs[j] += deltas[j];
+	}
+	for (int j = 0; j < 3; j++) avgs[j] /= 20.;
+	accel.setOffsets(avgs[0], avgs[1], avgs[2]-1);
+	while (true) {
+		for (int i = 0; i<200; i++){
+			while (!accel.hasData());
+			accel.fetchData(deltas);
+		}
+		printf("X: %.2fg\tY: %.2fg\tZ: %.2fg\n", deltas[0]*0.001, deltas[1]*0.001, deltas[2]*0.001);
+	}
+	return 0;
+}
+
+int main () {
+	//gyro_test();
+	return accel_test();
 }
