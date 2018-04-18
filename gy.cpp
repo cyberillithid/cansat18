@@ -165,6 +165,7 @@ public:
 	}
 };
 //TODO: think later on interfaces
+
 //STM L3G4200D
 class Gyro: /*public Gyroscope,*/ public I2CDev {
 private:
@@ -248,6 +249,28 @@ public:
 		resol = 1000./256.; //mid.				
 	}
 };
+
+//HMC5883L
+class Magnet: /*public Magnetometer, */ public I2CDev {
+private:
+	//limits: 1..8 gauss
+	double resol; //230 .. 1730 LSb / gauss
+	double rate; //default 0
+	//res: 1-2 deg accuracy
+public:
+	Magnet(): I2CDev(0x1E) {
+		whoami_reg = 0xA; whoami_val = 'H'; //IRA
+		//TODO: IRB, IRC?
+	}
+	void fetchData(double* arr) {
+		//DRXA - MSB, DRXB - LSB
+		uint8_t raw[6];
+		mb_read(0x06, 6, &raw);
+	}
+}
+
+//BMP085
+
 IODev I2CDev::d("/dev/i2c-1", O_RDWR);
 uint8_t I2CDev::lastaddr;
 
@@ -281,6 +304,31 @@ int gyro_test() {
 //TODO: Vec3D or sth like this
 
 int accel_test() {
+	// 0.1 sec of data [cf Hz]
+	// avg -> minus -> setOffset
+	Accel accel;
+	accel.setup();
+	double deltas[3];
+	double avgs[3];
+	//double xe, ye, ze;
+	for (int i = 0; i < 20; i++) {
+		while (!accel.hasData());
+		accel.fetchData(deltas);
+		for (int j = 0; j < 3; j++) avgs[j] += deltas[j];
+	}
+	for (int j = 0; j < 3; j++) avgs[j] /= 20.;
+	accel.setOffsets(avgs[0], avgs[1], avgs[2]-1);
+	while (true) {
+		for (int i = 0; i<200; i++){
+			while (!accel.hasData());
+			accel.fetchData(deltas);
+		}
+		printf("X: %.2fg\tY: %.2fg\tZ: %.2fg\n", deltas[0]*0.001, deltas[1]*0.001, deltas[2]*0.001);
+	}
+	return 0;
+}
+
+int magnet_test() {
 	// 0.1 sec of data [cf Hz]
 	// avg -> minus -> setOffset
 	Accel accel;
