@@ -254,22 +254,44 @@ public:
 class Magnet: /*public Magnetometer, */ public I2CDev {
 private:
 	//limits: 1..8 gauss
-	double resol; //230 .. 1730 LSb / gauss
-	double rate; //default 0
+	double resol; //230 .. 1730 LSb / gauss; default 0.92 mG / LSb
+	double rate; //default 15 Hz
 	//res: 1-2 deg accuracy
 public:
 	Magnet(): I2CDev(0x1E) {
 		whoami_reg = 0xA; whoami_val = 'H'; //IRA
-		//TODO: IRB, IRC?
 	}
 	void fetchData(double* arr) {
 		//DRXA - MSB, DRXB - LSB
-		uint8_t raw[6];
-		mb_read(0x06, 6, &raw);
+		int16_t raw[3];
+		mb_read(0x03, 6, (uint8_t*)&raw);
+		arr[0] = (int16_t)(__builtin_bswap16(raw[0]))*resol;
+		arr[1] = (int16_t)(__builtin_bswap16(raw[2]))*resol;
+		arr[2] = (int16_t)(__builtin_bswap16(raw[1]))*resol;
+		
 	}
-}
+	bool hasData() {
+		return ((read(0x9) & 1) == 1);
+	}
+	virtual void setup() {
+		I2CDev::setup();
+		//TODO: IRB, IRC?
+		write(0x2, 0); //Continuous Measurement Mode
+		resol = 0.92;
+		rate = 15;
+	}
+};
 
 //BMP085
+//TODO: LATER (MAYBE)
+class Baro: /*public Barometer, */ public I2CDev {
+private:
+	//limits: 300-1100 hPa (+9..-0.5km)
+public:
+	Baro() : I2CDev(0x77) {
+		//whoami_reg
+	}
+}
 
 IODev I2CDev::d("/dev/i2c-1", O_RDWR);
 uint8_t I2CDev::lastaddr;
@@ -331,29 +353,21 @@ int accel_test() {
 int magnet_test() {
 	// 0.1 sec of data [cf Hz]
 	// avg -> minus -> setOffset
-	Accel accel;
-	accel.setup();
+	Magnet magnet;
+	magnet.setup();
 	double deltas[3];
-	double avgs[3];
-	//double xe, ye, ze;
-	for (int i = 0; i < 20; i++) {
-		while (!accel.hasData());
-		accel.fetchData(deltas);
-		for (int j = 0; j < 3; j++) avgs[j] += deltas[j];
-	}
-	for (int j = 0; j < 3; j++) avgs[j] /= 20.;
-	accel.setOffsets(avgs[0], avgs[1], avgs[2]-1);
 	while (true) {
-		for (int i = 0; i<200; i++){
-			while (!accel.hasData());
-			accel.fetchData(deltas);
+		for (int i = 0; i<5; i++){
+			while (magnet.hasData());
+			while (!magnet.hasData());
+			magnet.fetchData(deltas);
 		}
-		printf("X: %.2fg\tY: %.2fg\tZ: %.2fg\n", deltas[0]*0.001, deltas[1]*0.001, deltas[2]*0.001);
+		printf("X: %.2fGa\tY: %.2fGa\tZ: %.2fGa\n", deltas[0]*0.001, deltas[1]*0.001, deltas[2]*0.001);
 	}
 	return 0;
 }
 
 int main () {
-	//gyro_test();
-	return accel_test();
+	//return gyro_test();
+	return magnet_test();
 }
