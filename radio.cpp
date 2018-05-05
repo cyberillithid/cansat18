@@ -4,15 +4,16 @@
  */
 
 #include <iostream>
+#include <csignal>
 #include <stdio.h>
-
+#include <stdint.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 #include "mexception.h"
 
-void pthrow(char* s) {
+void pthrow(const char* s) {
 	perror(s);
 	throw mexception(s);
 }
@@ -22,10 +23,10 @@ class LoRa {
 private:
 	int fd;
 	
-	static uint8_t mode = SPI_MODE_0;
-	static uint8_t bits = 8;
-	static uint32_t speed = 500000;
-	static uint16_t S_delay;
+	uint8_t mode = SPI_MODE_0;
+	uint8_t bits = 8;
+	uint32_t speed = 500000;
+	//uint16_t S_delay;
 	
 	void spiInit(){
 		int ret;
@@ -34,33 +35,33 @@ private:
 		 */
 		ret = ioctl(fd, SPI_IOC_WR_MODE, &mode);
 		if (ret == -1)
-			pabort("can't set spi mode");
+			pthrow("can't set spi mode");
 
 		ret = ioctl(fd, SPI_IOC_RD_MODE, &mode);
 		if (ret == -1)
-			pabort("can't get spi mode");
+			pthrow("can't get spi mode");
 
 		/*
 		 * bits per word
 		 */
 		ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
 		if (ret == -1)
-			pabort("can't set bits per word");
+			pthrow("can't set bits per word");
 
 		ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &bits);
 		if (ret == -1)
-			pabort("can't get bits per word");
+			pthrow("can't get bits per word");
 
 		/*
 		 * max speed hz
 		 */
 		ret = ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 		if (ret == -1)
-			pabort("can't set max speed hz");
+			pthrow("can't set max speed hz");
 
 		ret = ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed);
 		if (ret == -1)
-			pabort("can't get max speed hz");
+			pthrow("can't get max speed hz");
 
 		printf("spi mode: %d\n", mode);
 		printf("bits per word: %d\n", bits);
@@ -75,7 +76,7 @@ private:
 	}
 	
 	void writeReg(uint8_t reg, uint8_t val) {
-		uint8_t tx[] = {reg | 0x80, val};
+		uint8_t tx[] = {(uint8_t)(reg | 0x80), val};
 		uint8_t rx[] = {0,0};
 		transfer(fd, tx, 2, rx);
 	}
@@ -85,7 +86,7 @@ public:
 		fd = open(devAddr, O_RDWR);
 		if (fd < 0)
 			pthrow("can't open device");
-		spiInit(fd);
+		spiInit();
 	}
 	uint8_t getVersion() {
 		return readReg(0x42);

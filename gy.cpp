@@ -283,7 +283,7 @@ public:
 	Baro() : I2CDev(0x77) {
 		//whoami_reg
 	}
-}
+};
 
 IODev I2CDev::d("/dev/i2c-1", O_RDWR);
 uint8_t I2CDev::lastaddr;
