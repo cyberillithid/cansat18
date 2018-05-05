@@ -8,7 +8,10 @@
 #define        REG_FRF_MID    					0x07
 #define        REG_FRF_LSB    					0x08
 #define        REG_PA_CONFIG    				0x09
-
+#define        REG_PAYLOAD_LENGTH_LORA		 	0x22
+#define        REG_FIFO_ADDR_PTR  				0x0D
+#define        REG_FIFO        					0x00
+#define        REG_IRQ_FLAGS	    			0x12
 #define        REG_MODEM_CONFIG1	 		 	0x1D
 #define        REG_MODEM_CONFIG2	  			0x1E
 #define        REG_MODEM_CONFIG3	  			0x26
@@ -38,5 +41,8 @@ const uint8_t CR_5 = 0x01;
 
 //LORA SPREADING FACTOR:
 const uint8_t SF_12 = 0x0C;
+
+
+#define PKT_TYPE_DATA   0x10
 
 #endif

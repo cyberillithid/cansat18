@@ -271,8 +271,19 @@ private:
 		writeRegister(REG_OP_MODE, st0);
 	}
 	
+	void clearFlags() {
+		
+		uint8_t st0 = readRegister(REG_OP_MODE);
+		writeRegister(REG_OP_MODE, LORA_STANDBY_MODE);	// Stdby mode to write in registers
+        writeRegister(REG_IRQ_FLAGS, 0xFF);	// LoRa mode flags register
+        writeRegister(REG_OP_MODE, st0);
+        
+	}
+	
+	uint8_t _nodeAddr, _packNo;
+	
 public:
-	LoRa(const char* devAddr) { //"spidev1.0"
+	LoRa(const char* devAddr, uint8_t addr) { //"spidev1.0"
 		
 		//TODO: run RESET ?
 		fd = open(devAddr, O_RDWR);
@@ -301,7 +312,8 @@ public:
 			// SIFS_cad_number=3; -- ???
 		setChannel(0xD84CCC); //// loraChannel = 0xD84CCC; //CH_10_868; 
 		setPower(); // setPower('M'); //or 'X'
-		// _nodeAddress = LORA_ADDR (1 or 6)
+		_nodeAddr = addr;
+		_packNo = 0;
 		printf("\nConfiguration successful");
 		// cfg finished
 		
@@ -309,20 +321,64 @@ public:
 	uint8_t getVersion() {
 		return readRegister(0x42);
 	}
+	bool sendPacketTimeout(uint8_t dest, char* payload, uint16_t payloadLen, uint16_t waitSecs) {
+		// truncPacket
+		// setPacket (dest, payload)
+		uint8_t st0 = readRegister(REG_OP_MODE);	// Save the previous status
+		clearFlags();
+		writeRegister(REG_OP_MODE, LORA_STANDBY_MODE);
+		
+		//setDestination, setPayload
+		writeRegister(REG_PAYLOAD_LENGTH_LORA, payloadLen);
+		//packet_sent.type |= PKT_TYPE_DATA; // | PKT_FLAG_ACK_REQ;
+
+		writeRegister(REG_FIFO_ADDR_PTR, 0x80); 
+		
+		writeRegister(REG_FIFO, dest); 		// Writing the destination in FIFO
+        // added by C. Pham
+        writeRegister(REG_FIFO, PKT_TYPE_DATA); 		// Writing the packet type in FIFO
+        writeRegister(REG_FIFO, _nodeAddr);		// Writing the source in FIFO
+        writeRegister(REG_FIFO, _packNo++);	// Writing the packet number in FIFO
+        for(unsigned int i = 0; i < payloadLen; i++)
+        {
+            writeRegister(REG_FIFO, payload[i]);  // Writing the payload in FIFO
+        }
+        
+		writeRegister(REG_OP_MODE, st0);
+		
+		//sendwithtimeout
+		clearFlags();
+		writeRegister(REG_OP_MODE, LORA_TX_MODE);  
+		uint8_t value = readRegister(REG_IRQ_FLAGS);
+		time_t now = time(NULL);
+		while (((value & 8) == 0) && ((time(NULL)-now) <= waitSecs)){
+			value = readRegister(REG_IRQ_FLAGS);
+			delay(100);
+		}
+		return ((readRegister(REG_IRQ_FLAGS) & 8) == 8);
+	}
 };
 
 void INThandler(int sig){
   printf("Bye.\n");
   exit(0);
 }
-
+LoRa *lora;
 void setup() {
-	LoRa lora("/dev/spidev0.0");
-	printf("LoRa Version: %d\n", lora.getVersion());
+	lora = new LoRa("/dev/spidev0.0", 1);
+	printf("LoRa Version: %d\n", lora->getVersion());
 }
 
-void mainloop() {
-	
+void sendloop() {
+	char* s = "si vis pacem, para bellum";
+	for (;;) {
+		if (lora->sendPacketTimeout(6, s, strlen(s), 1)) {
+			printf("Packet sent successfully\n");
+		} else {
+			printf("Packet send failure\n");
+		}
+		delay(500);
+	}
 }
 
 int main(int argc, char *argv[])
@@ -332,7 +388,7 @@ int main(int argc, char *argv[])
 	// we catch the CTRL-C key
 	signal(SIGINT, INThandler);
 	setup();
-	mainloop();
+	sendloop();
 	
 	return 0;
 }
