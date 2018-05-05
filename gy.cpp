@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <exception>
+#include "mexception.h"
 #include <linux/i2c-dev.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -59,14 +59,6 @@ private:
 		//something
 		return ret;
 	}
-};
-
-class mexception : public std::exception {
-private:
-	const char* w;
-public:
-	mexception(const char* v) : w(v) {}
-	virtual const char* what() const _GLIBCXX_USE_NOEXCEPT {return w;}
 };
 
 class IODev {
