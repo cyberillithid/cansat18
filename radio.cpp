@@ -357,6 +357,89 @@ public:
 		}
 		return ((readRegister(REG_IRQ_FLAGS) & 8) == 8);
 	}
+
+	char* receiveAll(uint8_t timeoutSecs) {
+		writeRegister(REG_PA_RAMP, 0x08);
+		
+    writeRegister(REG_LNA, LNA_MAX_GAIN);
+    writeRegister(REG_FIFO_ADDR_PTR, 0x00);  // Setting address pointer in FIFO data buffer
+    writeRegister(REG_SYMB_TIMEOUT_LSB,0x05);
+    writeRegister(REG_FIFO_RX_BYTE_ADDR, 0x00);
+    //state = setPacketLength(MAX_LENGTH);	// With MAX_LENGTH gets all packets with length < MAX_LENGTH
+        writeRegister(REG_OP_MODE, LORA_RX_MODE);  	  // LORA mode - Rx
+        
+        uint8_t value = readRegister(REG_IRQ_FLAGS);
+        time_t cur = time(NULL);
+        while (((value & 64) == 0) && (time(NULL)-cur < timeoutSecs)) {
+			value = readRegister(REG_IRQ_FLAGS);
+			delay(10);
+		}
+		
+		writeRegister(REG_OP_MODE, LORA_STANDBY_MODE);	
+		if ((value & 64) == 64) {
+			if ((value & 32) == 32) {
+				printf("CRC incorrect\n");
+				return nullptr;
+			}
+		} else {
+			printf("Packet not received\n");
+			return nullptr;
+		}
+		
+		writeRegister(REG_FIFO_ADDR_PTR, 0x00); 
+		uint8_t dst = readRegister(REG_FIFO);
+		uint8_t type = readRegister(REG_FIFO);
+		uint8_t src = readRegister(REG_FIFO);
+		uint8_t packno = readRegister(REG_FIFO);
+		
+		uint8_t length = readRegister(REG_RX_NB_BYTES) - 4;
+		char* pkg = new char [length];
+		
+		for (int i = 0; i < length; i++) {
+			pkg[i] = readRegister(REG_FIFO);
+		}
+		
+		printf("## Packet received:\n");
+            printf("Destination: ");
+            printf("%d\n", dst);			 	// Printing destination
+            printf("Source: ");
+            printf("%d\n", src);			 	// Printing source
+            printf("Packet number: ");
+            printf("%d\n", packno);			// Printing packet number
+            printf("Packet length: ");
+            printf("%d\n", length);			// Printing packet length
+            printf("Data: ");
+            for(unsigned int i = 0; i < length; i++)
+            {
+                printf("%c", pkg[i]);		// Printing payload
+            }
+            printf("\n");
+            printf(" ##\n");
+            printf("\n");
+		
+	}
+/*
+	char* fetchPacket() {
+		uint8_t value = readRegister(REG_PKT_SNR_VALUE);
+		int8_t _SNR;
+        if( value & 0x80 ) // The SNR sign bit is 1
+        {
+            // Invert and divide by 4
+            value = ( ( ~value + 1 ) & 0xFF ) >> 2;
+            _SNR = -value;
+        }
+        else
+        {
+            // Divide by 4
+            _SNR = ( value & 0xFF ) >> 2;
+        }
+        state = 0;
+        printf("## SNR value is ");
+        printf("%d", _SNR);
+        printf(" ##\n");
+        printf("\n");
+	}
+*/
 };
 
 void INThandler(int sig){
@@ -378,6 +461,17 @@ void sendloop() {
 			printf("Packet send failure\n");
 		}
 		delay(500);
+	}
+}
+
+void rcvloop() {
+	for (;;) {
+		
+		char* cur = lora->receiveAll(3);
+		if (cur != nullptr) {
+			printf("Received %s", cur);
+			delete[] cur;
+		}
 	}
 }
 

@@ -12,6 +12,12 @@
 #define        REG_FIFO_ADDR_PTR  				0x0D
 #define        REG_FIFO        					0x00
 #define        REG_IRQ_FLAGS	    			0x12
+#define        REG_PA_RAMP    					0x0A
+#define        REG_LNA    						0x0C
+#define LNA_MAX_GAIN                0x23
+#define        REG_SYMB_TIMEOUT_LSB  			0x1F
+#define        REG_FIFO_RX_BYTE_ADDR 			0x25
+#define        REG_RX_NB_BYTES	    			0x13
 #define        REG_MODEM_CONFIG1	 		 	0x1D
 #define        REG_MODEM_CONFIG2	  			0x1E
 #define        REG_MODEM_CONFIG3	  			0x26
