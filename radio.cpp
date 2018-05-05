@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <csignal>
+#include <string.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <fcntl.h>
@@ -12,6 +13,7 @@
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 #include "mexception.h"
+//#define DEBUG
 
 void pthrow(const char* s) {
 	perror(s);
@@ -26,7 +28,33 @@ private:
 	uint8_t mode = SPI_MODE_0;
 	uint8_t bits = 8;
 	uint32_t speed = 500000;
-	//uint16_t S_delay;
+	uint16_t S_delay = 0;
+	
+	
+	void transfer(uint8_t* tx, uint8_t sz, uint8_t* rx)
+	{
+		int ret;
+		struct spi_ioc_transfer tr;
+		memset(&tr, 0, sizeof(struct spi_ioc_transfer));
+			tr.tx_buf = (unsigned long)tx;
+			tr.rx_buf = (unsigned long)rx;
+			tr.len = sz;
+			tr.speed_hz = speed;
+			tr.delay_usecs = S_delay;
+			tr.bits_per_word = bits;
+		
+		ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
+		if (ret < 1)
+			pthrow("can't send spi message");
+#ifdef DEBUG
+		for (ret = 0; ret < sz; ret++) {
+			if (!(ret % 6))
+				puts("");
+			printf("%.2X ", rx[ret]);
+		}
+		puts("");
+#endif
+	}
 	
 	void spiInit(){
 		int ret;
@@ -71,14 +99,14 @@ private:
 	uint8_t readReg(uint8_t reg){
 		uint8_t tx[] = {reg, 0};
 		uint8_t rx[] = {0, 0};
-		transfer(fd, tx, 2, rx);
+		transfer(tx, 2, rx);
 		return rx[1];
 	}
 	
 	void writeReg(uint8_t reg, uint8_t val) {
 		uint8_t tx[] = {(uint8_t)(reg | 0x80), val};
 		uint8_t rx[] = {0,0};
-		transfer(fd, tx, 2, rx);
+		transfer(tx, 2, rx);
 	}
 	
 public:
