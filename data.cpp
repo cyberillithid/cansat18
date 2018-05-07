@@ -41,6 +41,6 @@ void DataPkg::print() {
 	printf("Speed: %.4f m/s hor, %.4f m/s vert\n", speed, climb);
 	printf("Pi Time: %s", ctime((const time_t*)&time));
 	time_t f = (int)(gpstime);
-	printf("GPS Time: %s", ctime(&f));
+	printf("GPS Time: %.2f // %s", gpstime, ctime(&f));
 	
 }

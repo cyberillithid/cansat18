@@ -11,6 +11,7 @@
 #include "radio.h"
 #include <unistd.h>
 #include <ctime>
+#include <chrono>
 
 
 LoRa::LoRa(const char* devAddr, uint8_t addr) { //"spidev1.0"
@@ -291,7 +292,7 @@ uint8_t LoRa::getVersion() {
 	return readRegister(0x42);
 }
 
-bool LoRa::sendPacketTimeout(uint8_t dest, char* payload, uint16_t payloadLen, uint16_t waitSecs) {
+bool LoRa::sendPacketTimeout(uint8_t dest, char* payload, uint16_t payloadLen, uint16_t wait) {
 	// truncPacket
 	// setPacket (dest, payload)
 	uint8_t st0 = readRegister(REG_OP_MODE);	// Save the previous status
@@ -320,27 +321,30 @@ bool LoRa::sendPacketTimeout(uint8_t dest, char* payload, uint16_t payloadLen, u
 	clearFlags();
 	writeRegister(REG_OP_MODE, LORA_TX_MODE);  
 	uint8_t value = readRegister(REG_IRQ_FLAGS);
-	time_t now = time(NULL);
-	while (((value & 8) == 0) && ((time(NULL)-now) <= waitSecs)){
+	auto finWait = std::chrono::steady_clock::now() + std::chrono::milliseconds(wait);
+	while (((value & 8) == 0) && (std::chrono::steady_clock::now() < finWait)){
 		value = readRegister(REG_IRQ_FLAGS);
 		delay(100);
 	}
 	return ((readRegister(REG_IRQ_FLAGS) & 8) == 8);
 }
 
-char* LoRa::receiveAll(uint8_t timeoutSecs) {
+char* LoRa::receiveAll(uint16_t timeout) {
+	writeRegister(REG_OP_MODE, LORA_STANDBY_MODE);
+	clearFlags();	
 	writeRegister(REG_PA_RAMP, 0x08);
-	
-writeRegister(REG_LNA, LNA_MAX_GAIN);
-writeRegister(REG_FIFO_ADDR_PTR, 0x00);  // Setting address pointer in FIFO data buffer
-writeRegister(REG_SYMB_TIMEOUT_LSB,0x05);
-writeRegister(REG_FIFO_RX_BYTE_ADDR, 0x00);
-//state = setPacketLength(MAX_LENGTH);	// With MAX_LENGTH gets all packets with length < MAX_LENGTH
+	writeRegister(REG_LNA, LNA_MAX_GAIN);
+	writeRegister(REG_FIFO_ADDR_PTR, 0x00);  // Setting address pointer in FIFO data buffer
+	writeRegister(REG_SYMB_TIMEOUT_LSB,0x05);
+	writeRegister(REG_FIFO_RX_BYTE_ADDR, 0x00);
+	//state = setPacketLength(MAX_LENGTH);	// With MAX_LENGTH gets all packets with length < MAX_LENGTH
+	writeRegister(REG_PAYLOAD_LENGTH_LORA, 252);
+		
 	writeRegister(REG_OP_MODE, LORA_RX_MODE);  	  // LORA mode - Rx
 	
 	uint8_t value = readRegister(REG_IRQ_FLAGS);
-	time_t cur = time(NULL);
-	while (((value & 64) == 0) && (time(NULL)-cur < timeoutSecs)) {
+	auto finWait = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
+	while (((value & 64) == 0) && (std::chrono::steady_clock::now() < finWait)) {
 		value = readRegister(REG_IRQ_FLAGS);
 		delay(10);
 	}

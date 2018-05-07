@@ -396,7 +396,7 @@ int radio_thread() {
 		//std::unique_lock<std::mutex> lk(mRadioPkg);
 		DataPkg pkg = buildPacket();
 		size_t slen = pkg.toBytes(buf, 252);
-		if (lora->sendPacketTimeout(radioDst, buf, slen, 3)) {
+		if (lora->sendPacketTimeout(radioDst, buf, slen, 2000)) {
 			printf("Packet sent successfully\n");
 		} else {
 			printf("Packet send failure\n");
