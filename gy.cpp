@@ -380,7 +380,7 @@ DataPkg buildPacket() {
 		ret.gpstime = 0;
 	}
 	ret.time = time(NULL);
-	
+	//printf("\t%.2f\n", ret.gpstime);
 	return ret;
 }
 
@@ -397,7 +397,7 @@ int radio_thread() {
 		//std::unique_lock<std::mutex> lk(mRadioPkg);
 		DataPkg pkg = buildPacket();
 		size_t slen = pkg.toBytes(buf, 252);
-		if (lora->sendPacketTimeout(radioDst, buf, slen, 2000)) {
+		if (lora->sendPacketTimeout(radioDst, buf, slen, 4000)) {
 			printf("Packet sent successfully\n");
 		} else {
 			printf("Packet send failure\n");
@@ -430,7 +430,7 @@ int main () {
 		if (gps_new) {
 			std::unique_lock<std::mutex> lk(mGpsFix);
 			std::cout << fix.latitude << ", " << fix.longitude << ", ";
-			std::cout << fix.altitude << "\n";
+			std::cout << fix.altitude << "; @" << time(NULL) << "+" << fix.time - time(NULL) << "\n";
 			gps_new = false;
 		}
 		delay(1000);

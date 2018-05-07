@@ -324,9 +324,11 @@ bool LoRa::sendPacketTimeout(uint8_t dest, char* payload, uint16_t payloadLen, u
 	auto finWait = std::chrono::steady_clock::now() + std::chrono::milliseconds(wait);
 	while (((value & 8) == 0) && (std::chrono::steady_clock::now() < finWait)){
 		value = readRegister(REG_IRQ_FLAGS);
-		delay(100);
+		//delay(100);
 	}
-	return ((readRegister(REG_IRQ_FLAGS) & 8) == 8);
+	bool ret = ((readRegister(REG_IRQ_FLAGS) & 8) == 8);
+	clearFlags();
+	return ret;
 }
 
 char* LoRa::receiveAll(uint16_t timeout) {
