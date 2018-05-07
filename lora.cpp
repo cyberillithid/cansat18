@@ -241,10 +241,10 @@ void LoRa::setMode(){ //using 'mode 1'
 	
 	// verify
 	config1 = readRegister(REG_MODEM_CONFIG1);
-	if( (config1 >> 1) != 0x39 )
+	if (config1 != 0x98) //(config1 >> 1) != 0x39 )
 		throw mexception("Error setting mode");
 	config2 = readRegister(REG_MODEM_CONFIG2);
-	if( (config2 >> 4) != SF_12 )
+	if (config2 != 0xC4)// (config2 >> 4) != SF_12 )
 		throw mexception("Error setting mode");
 	writeRegister(REG_OP_MODE, st0);	// Getting back to previous status
 	delay(100);
