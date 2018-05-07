@@ -17,8 +17,9 @@ void INThandler(int sig){
 void rcvloop() {
 	LoRa *lora = new LoRa("/dev/spidev0.0", RCVR_ADDR);
 	printf("LoRa Version: %d\n", lora->getVersion());
+	lora->setLogLevel(3);
 	for (;;) {
-		char* cur = lora->receiveAll(1000);
+		char* cur = lora->receiveAll(5000);
 		if (cur != nullptr) {
 			DataPkg a(cur, lora->getLength());
 			a.print();

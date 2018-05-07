@@ -387,16 +387,22 @@ char* LoRa::receiveAll(uint16_t timeout) {
 		printf("%d\n", packno);			// Printing packet number
 		printf("Packet length: ");
 		printf("%d\n", _length);			// Printing packet length
+		if (loglevel > 4){
 		printf("Data: ");
 		for(unsigned int i = 0; i < _length; i++)
 		{
 			printf("%c", pkg[i]);		// Printing payload
 		}
 		printf("\n");
+	}
 		printf(" ##\n");
 		printf("\n");
 	}
 	return pkg;
+}
+
+void LoRa::setLogLevel(int ll) {
+	loglevel = ll;
 }
 
 uint8_t LoRa::getLength() {

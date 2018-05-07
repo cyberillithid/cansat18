@@ -377,6 +377,7 @@ DataPkg buildPacket() {
 	} else {
 		ret.gps_mode = 0;
 		ret.lat = ret.lon = ret.alt = ret.speed = ret.climb = NAN;
+		ret.gpstime = 0;
 	}
 	ret.time = time(NULL);
 	
