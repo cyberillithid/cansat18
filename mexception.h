@@ -11,4 +11,7 @@ public:
 	virtual const char* what() const _GLIBCXX_USE_NOEXCEPT;// {return w;}
 };
 
+void pthrow(const char* s);
+void delay(int ms);
+
 #endif //__MEXCEPTION_H

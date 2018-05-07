@@ -1,6 +1,8 @@
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "lora.h"
 #include "mexception.h"
 #include <linux/i2c-dev.h>
 #include <sys/ioctl.h>
@@ -10,56 +12,15 @@
 #include <fcntl.h>
 #include <math.h>
 #include <string.h>
-//deprecated -- to lurk for more (cf'd from Arduino lib?)
-class GY80 {
-public:
+#include <libgpsmm.h>
 
-	GY80() {
-		//Wire.begin()
-		//m_init()
-		//  m_set_scale(GY80_m_scale_8_1 = 7)
-		//  100./230, 100./205 z
-		write(dev_m, m_cfgB, 7<<5);
-		//  m_set_mode(GY80_m_continuous)
-		write(dev_m, m_mode, 0);
-		m_scale = 100./230;
-		m_scale_z = 100./205;
-		//a_init()
-		write(dev_a, a_pwr, 0);
-		write(dev_a, a_pwr, 16);
-		write(dev_a, a_pwr, 8);
-		//  a_set_scale (scale_16 = 3)
-		uint8_t* a_prev = read(dev_a, a_fmt, 1);
-		uint8_t fmt = (*a_prev & ~(0xF)) | 11;
-		write(dev_a, a_fmt, fmt);
-		delete[] a_prev;
-		// a_set_bw (bw_12_5 6.25 Hz bandwidth = 7)
-		
-		//g_init()
-		//p_init()
-	}
-private:
-//addresses
-	static const uint8_t dev_m = 0x1E;
-	static const uint8_t dev_a = 0x53;
-	static const uint8_t dev_g = 0x69;
-	static const uint8_t dev_p = 0x77;
-//regs
-	static const uint8_t m_cfgB = 0x01;
-	static const uint8_t m_mode = 0x02;
-	static const uint8_t a_pwr = 0x2D;
-	static const uint8_t a_fmt = 0x31;
-	float m_scale;// = 100./230;
-	float m_scale_z;// = 100./205;
-	void write(uint8_t device, uint8_t addr, uint8_t data) {
-		//something
-	}
-	uint8_t* read (uint8_t device, uint8_t addr, size_t length) {
-		uint8_t* ret = new uint8_t[length];
-		//something
-		return ret;
-	}
-};
+#include <math.h>
+#include <csignal>
+#include <thread>
+#include <deque>
+#include <atomic>
+#include <mutex>
+#include "data.h"
 
 class IODev {
 private:
@@ -359,7 +320,120 @@ int magnet_test() {
 	return 0;
 }
 
+
+std::atomic<bool> gps_stop, gps_new, gps_hasData;
+std::mutex mGpsFix;
+gps_fix_t fix;
+
+int gps_thread() {
+    gpsmm gps_rec("localhost", DEFAULT_GPSD_PORT);
+	gps_stop = false;
+	gps_new = false;
+	gps_hasData = false;
+    if (gps_rec.stream(WATCH_ENABLE|WATCH_JSON) == NULL) {
+        std::cerr << "No GPSD running.\n";
+        gps_stop = true;
+        return 1;
+    }
+	
+    while (!gps_stop) {
+        struct gps_data_t* newdata;
+
+        if (!gps_rec.waiting(50000000))
+          continue;
+
+        if ((newdata = gps_rec.read()) == NULL) {
+            std::cerr << "Read error.\n";
+            //return 1;
+        } else {
+			if ((newdata->status == 0) || (newdata->fix.mode < 2)) {
+				gps_hasData = false;
+			} else {
+				gps_new = true;
+				gps_hasData = true;
+				//std::cout << "FIX: ";
+				std::unique_lock<std::mutex> lk(mGpsFix);
+				fix = newdata->fix;
+			}
+            //PROCESS(newdata);
+        }
+    }
+    return 0;
+}
+
+
+
+DataPkg buildPacket() {
+	DataPkg ret;
+	if (gps_hasData) {
+		std::unique_lock<std::mutex> lk (mGpsFix);
+		ret.gps_mode = fix.mode;
+		ret.lat = fix.latitude;
+		ret.lon = fix.longitude;
+		ret.alt = fix.altitude;
+		ret.speed = fix.speed;
+		ret.climb = fix.climb;
+		ret.gpstime = fix.time;
+	} else {
+		ret.gps_mode = 0;
+		ret.lat = ret.lon = ret.alt = ret.speed = ret.climb = NAN;
+	}
+	ret.time = time(NULL);
+	
+	return ret;
+}
+
+std::atomic<bool> radio_stop;
+const uint8_t radioDst = RCVR_ADDR;
+//std::mutex mRadioPkg;
+
+int radio_thread() {
+	LoRa* lora;
+	lora = new LoRa("/dev/spidev0.0", SNDR_ADDR);
+	printf("LoRa Version: %d\n", lora->getVersion());
+	char buf[252];
+	while (!radio_stop) {
+		//std::unique_lock<std::mutex> lk(mRadioPkg);
+		DataPkg pkg = buildPacket();
+		size_t slen = pkg.toBytes(buf, 252);
+		if (lora->sendPacketTimeout(radioDst, buf, slen, 3)) {
+			printf("Packet sent successfully\n");
+		} else {
+			printf("Packet send failure\n");
+		}
+		delay(1000);
+	}
+	return 0;
+}
+
+void INThandler(int sig){
+  printf("Bye.\n");
+  gps_stop = true;
+ // exit(0);
+}
+
 int main () {
 	//return gyro_test();
-	return magnet_test();
+	//return magnet_test();
+	//return radio_test();
+	signal(SIGINT, INThandler);
+	std::thread t1(gps_thread);
+	std::thread t2(radio_thread);
+	while (!gps_stop) {
+		if (!gps_hasData) {
+			std::cout << "NO FIX\n";
+			while (!gps_hasData && !gps_stop) {
+				delay(1000);
+			}
+		}
+		if (gps_new) {
+			std::unique_lock<std::mutex> lk(mGpsFix);
+			std::cout << fix.latitude << ", " << fix.longitude << ", ";
+			std::cout << fix.altitude << "\n";
+			gps_new = false;
+		}
+		delay(1000);
+	}
+	t1.join();
+	return 0;	
 }
