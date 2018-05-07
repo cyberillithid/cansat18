@@ -300,7 +300,7 @@ bool LoRa::sendPacketTimeout(uint8_t dest, char* payload, uint16_t payloadLen, u
 	writeRegister(REG_OP_MODE, LORA_STANDBY_MODE);
 	
 	//setDestination, setPayload
-	writeRegister(REG_PAYLOAD_LENGTH_LORA, payloadLen);
+	writeRegister(REG_PAYLOAD_LENGTH_LORA, payloadLen+4);
 	//packet_sent.type |= PKT_TYPE_DATA; // | PKT_FLAG_ACK_REQ;
 
 	writeRegister(REG_FIFO_ADDR_PTR, 0x80); 
@@ -365,12 +365,12 @@ char* LoRa::receiveAll(uint16_t timeout) {
 	}
 	
 	writeRegister(REG_FIFO_ADDR_PTR, 0x00); 
-	uint8_t dst = readRegister(REG_FIFO);
-	uint8_t type = readRegister(REG_FIFO);
-	uint8_t src = readRegister(REG_FIFO);
-	uint8_t packno = readRegister(REG_FIFO);
+	_dst = readRegister(REG_FIFO);
+	_type = readRegister(REG_FIFO);
+	_src = readRegister(REG_FIFO);
+	_packno = readRegister(REG_FIFO);
 	
-	_length = readRegister(REG_RX_NB_BYTES); // - 4;
+	_length = readRegister(REG_RX_NB_BYTES-4); // - 4;
 	char* pkg = new char [_length];
 	
 	for (int i = 0; i < _length; i++) {
@@ -380,13 +380,13 @@ char* LoRa::receiveAll(uint16_t timeout) {
 	if (loglevel > 2) {
 	printf("## Packet received:\n");
 		printf("Destination: ");
-		printf("%d\n", dst);			 	// Printing destination
+		printf("%d\n", _dst);			 	// Printing destination
 		printf("Source: ");
-		printf("%d\n", src);			 	// Printing source
+		printf("%d\n", _src);			 	// Printing source
 		printf("Packet type: ");
-		printf("%d\n", type);			// Printing packet number
+		printf("%d\n", _type);			// Printing packet number
 		printf("Packet number: ");
-		printf("%d\n", packno);			// Printing packet number
+		printf("%d\n", _packno);			// Printing packet number
 		printf("Packet length: ");
 		printf("%d\n", _length);			// Printing packet length
 		if (loglevel > 4){

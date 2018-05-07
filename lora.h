@@ -37,6 +37,9 @@ public:
 	LoRa(const char* devAddr, uint8_t addr);
 	uint8_t getVersion();
 	uint8_t getLength();
+	
+	uint8_t _dst, _type, _src, _packno;
+	
 	void setLogLevel(int ll);
 	bool sendPacketTimeout(uint8_t dest, char* payload, uint16_t payloadLen, uint16_t wait);
 	char* receiveAll(uint16_t timeout);
