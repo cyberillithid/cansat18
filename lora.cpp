@@ -31,7 +31,7 @@ LoRa::LoRa(const char* devAddr, uint8_t addr) { //"spidev1.0"
 		//_board = SX1276Chip;
 	} else {
 		printf("Unrecognized transceiver: version %x.\n", ver);
-		throw new mexception("Unrecognized transceiver");
+		throw mexception("Unrecognized transceiver");
 	}
 	
 		//TODO: RxChainCalibration();
@@ -180,7 +180,7 @@ void LoRa::setLORA() {
 	}
 	else
 	{ // FSK mode
-		throw new mexception("LORA installation failed");
+		throw mexception("LORA installation failed");
 	}
 }
 
@@ -203,7 +203,7 @@ void LoRa::fetchSyncWord() {
 		printf("## Sync Word 0x12 has been successfully set ##\n");
 	}
 	else {
-		throw new mexception("Sync word setting failure");
+		throw mexception("Sync word setting failure");
 	}
 writeRegister(REG_OP_MODE,st0);	// Getting back to previous status
 delay(100);
@@ -212,18 +212,18 @@ delay(100);
 void LoRa::setMode(){ //using 'mode 1'
 	 uint8_t st0 = readRegister(REG_OP_MODE);
 	 writeRegister(REG_OP_MODE, LORA_STANDBY_MODE);
-	 //setCR(CR_5);        // CR = 4/5     
-	//setBW(BW_125);      // BW = 125 KHz
-	uint8_t config1 = 0B01110010; //readRegister(REG_MODEM_CONFIG1);
+	 //setCR(CR_5);        // CR = 4/5       4/8
+	//setBW(BW_125);      // BW = 125 KHz -> 250
+	uint8_t config1 = 0x98; //= 0B01110010; //readRegister(REG_MODEM_CONFIG1);
 	//config1 &= 1;
 	//config1 |= 0B01110010;
 	writeRegister(REG_MODEM_CONFIG1, config1);		// Update config1
 
 	//setSF(SF_12);       // SF = 12
-	uint8_t config2 = readRegister(REG_MODEM_CONFIG2);
+	uint8_t config2 = 0xC4;/*readRegister(REG_MODEM_CONFIG2);
 	config2 = config2 & 0B11001111;	// clears bits 5 & 4 from REG_MODEM_CONFIG2
 	config2 = config2 | 0B11000000;	// sets bits 7 & 6 from REG_MODEM_CONFIG2
-	
+	*/
 	uint8_t config3=readRegister(REG_MODEM_CONFIG3);
 	config3 = config3 | 0B00001000;
 	writeRegister(REG_MODEM_CONFIG3,config3);
@@ -242,10 +242,10 @@ void LoRa::setMode(){ //using 'mode 1'
 	// verify
 	config1 = readRegister(REG_MODEM_CONFIG1);
 	if( (config1 >> 1) != 0x39 )
-		throw new mexception("Error setting mode");
+		throw mexception("Error setting mode");
 	config2 = readRegister(REG_MODEM_CONFIG2);
 	if( (config2 >> 4) != SF_12 )
-		throw new mexception("Error setting mode");
+		throw mexception("Error setting mode");
 	writeRegister(REG_OP_MODE, st0);	// Getting back to previous status
 	delay(100);
 }
@@ -264,7 +264,7 @@ void LoRa::setChannel(uint32_t freq) {
 	pF[0] = readRegister(REG_FRF_LSB);
 	writeRegister(REG_OP_MODE, st0);
 	if (f != freq) 
-		throw new mexception("Frequency set failed");
+		throw mexception("Frequency set failed");
 		
 }
 
@@ -272,10 +272,10 @@ void LoRa::setPower() {
 	uint8_t st0 = readRegister(REG_OP_MODE);
 	writeRegister(REG_OP_MODE, LORA_STANDBY_MODE);
 	// 0x0F
-	writeRegister(0x4d, 0x84); // ???
-	writeRegister(REG_PA_CONFIG, 0x7F);
-	if (readRegister(REG_PA_CONFIG) != 0x7F)
-		throw new mexception("Power cfg failed");
+	writeRegister(0x4d, 0x87); // HIGH POWER (default 0x84)
+	writeRegister(REG_PA_CONFIG, 0xFF);
+	if (readRegister(REG_PA_CONFIG) != 0xFF) //MAX POWER (ex. 0x7F)
+		throw mexception("Power cfg failed");
 	writeRegister(REG_OP_MODE, st0);
 }
 
@@ -348,7 +348,7 @@ char* LoRa::receiveAll(uint16_t timeout) {
 	auto finWait = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
 	while (((value & 64) == 0) && (std::chrono::steady_clock::now() < finWait)) {
 		value = readRegister(REG_IRQ_FLAGS);
-		delay(10);
+		//delay(10);
 	}
 	
 	writeRegister(REG_OP_MODE, LORA_STANDBY_MODE);	
@@ -370,7 +370,7 @@ char* LoRa::receiveAll(uint16_t timeout) {
 	_src = readRegister(REG_FIFO);
 	_packno = readRegister(REG_FIFO);
 	
-	_length = readRegister(REG_RX_NB_BYTES-4); // - 4;
+	_length = readRegister(REG_RX_NB_BYTES)-4; // - 4;
 	char* pkg = new char [_length];
 	
 	for (int i = 0; i < _length; i++) {

@@ -9,8 +9,8 @@
 DataPkg::DataPkg() {}
 
 DataPkg::DataPkg(char* buf, size_t len) {
-	if (len < _SIZE) throw new mexception("Size error");
-	if (buf[0] != _TYPE) throw new mexception("Wrong type");
+	if (len < _SIZE) throw mexception("Size error");
+	if (buf[0] != _TYPE) throw mexception("Wrong type");
 	gps_mode = buf[1];
 	double *pars = (double*)(buf+2);
 	lat = pars[0];

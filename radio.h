@@ -35,6 +35,8 @@ const uint32_t CH_10_868 = 0xD84CCC; // channel 10, central freq = 865.20MHz
 const uint8_t LORA_SLEEP_MODE = 0x80;
 const uint8_t LORA_STANDBY_MODE = 0x81;
 const uint8_t LORA_TX_MODE = 0x83;
+const uint8_t LORA_RX_SINGLE_MODE = 0x86;
+const uint8_t LORA_RX_CONT_MODE = 0x85;
 const uint8_t LORA_RX_MODE = 0x85;
 
 const uint8_t FSK_SLEEP_MODE = 0x00;

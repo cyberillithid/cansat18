@@ -21,11 +21,15 @@ void rcvloop() {
 	for (;;) {
 		char* cur = lora->receiveAll(5000);
 		if (cur != nullptr) {
-			DataPkg a(cur, lora->getLength());
-			a.print();
+			try {
+				DataPkg a(cur, lora->getLength());
+				a.print();
+			} catch (std::exception& e) {
+				std::cerr << e.what() << "\n";
+			}
 			//printf("Received %s", cur);
 			delete[] cur;
-			delay(100);
+			//delay(100);
 		}
 	}
 }
