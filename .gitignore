@@ -1,5 +1,4 @@
 *.o
-gy
 gy_p
-radio
-run
+cansat80
+receiver80
