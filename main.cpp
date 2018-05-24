@@ -1,13 +1,23 @@
 /*
- * radio.cpp
+ * main.cpp
  *
  */
-
+ 
 #include <iostream>
 #include <csignal>
-#include "lora.h"
+#include "radio/lora.h"
 #include <string.h>
-#include "data.h"
+#include "radio/data.h"
+
+
+#ifndef SATELLITE
+#define IS_RCVR true
+#define M_LOOP rcvloop
+#else
+#define IS_RCVR false
+#define M_LOOP sat.loop
+#include "satellite.h"
+#endif
 
 void INThandler(int sig){
   printf("Bye.\n");
@@ -37,11 +47,14 @@ void rcvloop() {
 int main(int argc, char *argv[])
 {
 	//parse options
-
+	// -- we don't have any
+	
 	// we catch the CTRL-C key
 	signal(SIGINT, INThandler);
-	//setup();
-	rcvloop();
+#ifdef SATELLITE
+	Satellite sat;
+#endif
+	M_LOOP();
 	
 	return 0;
 }
