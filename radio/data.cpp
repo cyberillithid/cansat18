@@ -61,11 +61,11 @@ void DataPkg::print() {
 	printf("GPS Mode: %s\n", GPS_MODES[gps_mode]);
 	printf("Coordinates: %.4f, %.4f, %.4f\n", lat, lon, alt);
 	printf("Speed: %.4f m/s hor, %.4f m/s vert\n", speed, climb);
-	printf("Pi Time: %s\n", ctime((const time_t*)&time));
+	printf("Pi Time: %s", ctime((const time_t*)&time));
 	time_t f = (int)(gpstime);
-	printf("GPS Time: %s + %.3lf\n", ctime(&f), (gpstime-f));
+	printf("GPS Time: %.3lf + %s\n", (gpstime-f), ctime(&f));
 	printf("Temperature: %.3lf @Pi, %.1lf @BMP\n", (temp*0.001), (bmpTemp*0.1));
 	printf("Pressure: %.2lf hPa\n", (pressure*0.01));
-	printf("Magnetic field: %lfGa, %lfGa, %lfGa\n", magn.x, magn.y, magn.z);
+	printf("Magnetic field: %.2fGa, %.2fGa, %.2fGa\n", magn.x*0.001, magn.y*0.001, magn.z*0.001);
 	printf("Acceleration: %lf, %lf, %lf\n", accel.x, accel.y, accel.z);
 }
