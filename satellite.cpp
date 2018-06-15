@@ -77,8 +77,7 @@ uint32_t fetchTemp() {
 Satellite::Satellite() : i2cbus("/dev/i2c-1"),
 		magneto(i2cbus),
 		accel(i2cbus), gyro(i2cbus), baro(i2cbus),
-		bat(i2cbus, 0x36)
-		t1(gps_thread)
+		t1(gps_thread), bat(i2cbus, 0x36)
 {
 	radio_stop=false;
 	accel.setup();
@@ -132,7 +131,11 @@ DataPkg Satellite::buildPacket() {
 	magneto.fetchData(&ret.magn);
 	while (!accel.hasData());
 	accel.fetchData(&ret.accel);
-	bat.mb_read(2, 4, &ret.battery);
+	uint16_t volt, cap;
+	bat.mb_read(2, 2, (uint8_t*)&volt);
+	bat.mb_read(4, 2, (uint8_t*)&cap);
+	ret.battery = (uint32_t)(__builtin_bswap16(cap)) << 16 | __builtin_bswap16(volt);
+	//printf(stderr, "%x\n", ret.battery);
 	//printf("\t%.2f\n", ret.gpstime);
 	return ret;
 }
