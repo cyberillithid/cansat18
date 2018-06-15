@@ -80,6 +80,7 @@ Satellite::Satellite() : i2cbus("/dev/i2c-1"),
 		t1(gps_thread)
 {
 	radio_stop=false;
+	accel.setup();
 	magneto.setup();
 	t2 = new std::thread(&Satellite::radio_thread, this);
 }
@@ -128,6 +129,7 @@ DataPkg Satellite::buildPacket() {
 	ret.pressure = baro.getPress();
 	ret.bmpTemp = baro.getTemp();
 	magneto.fetchData(&ret.magn);
+	while (!accel.hasData());
 	accel.fetchData(&ret.accel);
 	//printf("\t%.2f\n", ret.gpstime);
 	return ret;
