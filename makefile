@@ -1,33 +1,47 @@
 CC=g++
 CFLAGS=-Wall -I. -std=c++11
 
+ODIR=obj
+
+_OBJ_RAD = lora.o data.o 
+OBJ_RAD = $(patsubst %,$(ODIR)/radio/%,$(_OBJ_RAD))
+
+_OBJ_SENS = devices.o Magnet_HMC5883L.o Accel_ADXL345.o Gyro_L3G4200D.o Baro_BMP085.o
+OBJ_SENS = $(patsubst %,$(ODIR)/sensors/%,$(_OBJ_SENS))
+
+LIBS = -lgps -lpthread
+
 all: receiver80 cansat80
 
-receiver80: radio_grp rcvr.o
-	$(CC) lora.o data.o rcvr.o -o receiver80
+install: cansat80
+	config/install.sh
 
-cansat80: radio_grp sens_grp sndr.o
-	$(CC) -lgps -lpthread lora.o data.o devices.o \
-magnet.o accel.o gyro.o baro.o satellite.o sndr.o -o cansat80
+receiver80: $(OBJ_RAD) $(ODIR)/rcvr.o
+	$(CC) $^ -o $@
 
-sens_grp:
-	$(CC) $(CFLAGS) -c sensors/devices.cpp
-	$(CC) $(CFLAGS) -c sensors/Magnet_HMC5883L.cpp -o magnet.o
-	$(CC) $(CFLAGS) -c sensors/Accel_ADXL345.cpp -o accel.o
-	$(CC) $(CFLAGS) -c sensors/Gyro_L3G4200D.cpp -o gyro.o
-	$(CC) $(CFLAGS) -c sensors/Baro_BMP085.cpp -o baro.o
+cansat80: $(OBJ_RAD) $(OBJ_SENS) $(ODIR)/sndr.o $(ODIR)/satellite.o
+	$(CC) $(LIBS) $(CFLAGS) -o $@ $^
 
-rcvr.o:
-	$(CC) $(CFLAGS) -c main.cpp -o rcvr.o
+$(ODIR)/radio/%.o: radio/%.cpp | $(ODIR)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-sndr.o:
-	$(CC) $(CFLAGS) -c satellite.cpp
-	$(CC) $(CFLAGS) -DSATELLITE -c main.cpp -o sndr.o
+$(ODIR)/sensors/%.o: sensors/%.cpp | $(ODIR)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-radio_grp:
-	$(CC) $(CFLAGS) -c radio/lora.cpp
-	$(CC) $(CFLAGS) -c radio/data.cpp
+$(ODIR)/rcvr.o: | $(ODIR)
+	$(CC) $(CFLAGS) -c main.cpp -o $(ODIR)/rcvr.o
+
+$(ODIR)/sndr.o: | $(ODIR)
+	$(CC) $(CFLAGS) -DSATELLITE -c main.cpp -o $(ODIR)/sndr.o
+
+$(ODIR)/satellite.o: | $(ODIR)
+	$(CC) $(CFLAGS) -c satellite.cpp -o $(ODIR)/satellite.o
+
+$(ODIR):
+	mkdir $(ODIR)
+	mkdir $(ODIR)/radio
+	mkdir $(ODIR)/sensors
 
 clean:
-	rm -rf *.o *80
+	rm -rf $(ODIR) *80
 
