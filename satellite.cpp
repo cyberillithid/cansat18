@@ -74,7 +74,7 @@ uint32_t fetchTemp() {
 	return T;
 }
 
-Satellite::Satellite() : i2cbus("/dev/i2c-1"),
+Satellite::Satellite(bool isLo) : isLoHF(isLo), i2cbus("/dev/i2c-1"),
 		magneto(i2cbus),
 		accel(i2cbus), gyro(i2cbus), baro(i2cbus),
 		t1(gps_thread), bat(i2cbus, 0x36)
@@ -144,7 +144,10 @@ const uint8_t radioDst = RCVR_ADDR;
 
 int Satellite::radio_thread() {
 	LoRa* lora;
-	lora = new LoRa("/dev/spidev0.0", SNDR_ADDR);
+	if (isLoHF)
+		lora = new LoRa("/dev/spidev0.0", SNDR_ADDR, CH_01_433);
+	else
+		lora = new LoRa("/dev/spidev0.0", SNDR_ADDR);
 	printf("LoRa Version: %d\n", lora->getVersion());
 	time_t t = time(NULL);
 	fprintf(stderr, "Started work at %s", ctime(&t));

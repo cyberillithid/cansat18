@@ -12,52 +12,92 @@
 
 #ifndef SATELLITE
 #define IS_RCVR true
-#define M_LOOP rcvloop
+#include <atomic>
+#include <thread>
+std::atomic<bool> dieRcvr;
+std::thread *loThr;
 #else
 #define IS_RCVR false
-#define M_LOOP sat.loop
 #include "satellite.h"
 #endif	
 
 void INThandler(int sig){
   printf("Bye.\n");
   time_t t = time(NULL);
+#ifndef SATELLITE
+  dieRcvr = true;
+  loThr->join();
+#endif
   fprintf(stderr, "Finished work at %s", ctime(&t));
   exit(0);
 }
 
-void rcvloop() {
-	LoRa *lora = new LoRa("/dev/spidev0.0", RCVR_ADDR);
-	printf("LoRa Version: %d\n", lora->getVersion());
-	lora->setLogLevel(3);
-	for (;;) {
+#ifndef SATELLITE
+void getPkg(LoRa* lora, const char* tag) {
+	while (!dieRcvr) {
 		char* cur = lora->receiveAll(5000);
 		if (cur != nullptr) {
 			try {
+				printf("%s: ", tag);
 				DataPkg a(cur, lora->getLength());
 				a.print();
+				fflush(stdout);
 			} catch (std::exception& e) {
 				std::cerr << e.what() << "\n";
 			}
-			//printf("Received %s", cur);
 			delete[] cur;
-			//delay(100);
 		}
 	}
+	printf("%s finished\n",tag);
+	delete lora;
 }
+
+void rcvloop(bool hf, bool lf) {
+	LoRa* loraHi, *loraLo;
+	if (hf) {
+		loraHi = new LoRa("/dev/spidev0.0", RCVR_ADDR);
+		printf("LoRa/Hi Version: %d\n", loraHi->getVersion());
+		loraHi->setLogLevel(3);
+	}
+	if (lf) {
+		loraLo = new LoRa("/dev/spidev1.0", RCVR_ADDR, CH_01_433);
+		printf("LoRa/Lo Version: %d\n", loraLo->getVersion());
+		loraLo->setLogLevel(3);
+	}
+	dieRcvr = false;
+	if (lf) loThr = new std::thread(getPkg, loraLo, "433");
+	if (hf) getPkg(loraHi, "866");
+}
+#endif
 
 int main(int argc, char *argv[])
 {
 	//parse options
 	// -- we don't have any
-	printf("%d", argc);
+	//printf("%d", argc);
+	bool hi = true, lo = IS_RCVR;
+	if (argc > 1){
+		switch (argv[1][0]){
+			case 'l': //low
+				hi = false;
+			case 'b': //both
+				lo = true;
+				break;	
+			case 'h': //high
+				lo = false;
+			default: //per
+				break;
+		}
+	}
 	// we catch the CTRL-C key
 	signal(SIGINT, INThandler);
 	signal(SIGTERM, INThandler);
 #ifdef SATELLITE
-	Satellite sat;
+	Satellite sat(lo);
+	sat.loop();
+#else
+	rcvloop(hi, lo);
 #endif
-	M_LOOP();
 	
 	return 0;
 }

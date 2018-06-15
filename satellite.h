@@ -7,6 +7,7 @@
 
 class Satellite {
 private:
+	bool isLoHF;
 	I2CBus i2cbus;
 	Magnet_HMC5883L magneto;
 	Accel_ADXL345 accel;
@@ -20,7 +21,7 @@ private:
 	int radio_thread();
 	DataPkg buildPacket();
 public:
-	Satellite();
+	Satellite(bool isLo);
 	~Satellite();
 	void loop();
 };

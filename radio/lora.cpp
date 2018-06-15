@@ -261,6 +261,8 @@ void LoRa::setMode(){ //using 'mode 1'
 }
 
 void LoRa::setChannel(uint32_t freq) {
+	float freq_f = (freq * 61.035)*.001/1000;
+	fprintf(stderr, "Frequency: %.3f MHz", freq_f);
 	uint32_t f = freq;
 	uint8_t* pF = (uint8_t*)(&f);
 	uint8_t st0 = readRegister(REG_OP_MODE);

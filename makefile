@@ -17,7 +17,7 @@ install: cansat80
 	config/install.sh
 
 receiver80: $(OBJ_RAD) $(ODIR)/rcvr.o
-	$(CC) $^ -o $@
+	$(CC) -lpthread $^ -o $@
 
 cansat80: $(OBJ_RAD) $(OBJ_SENS) $(ODIR)/sndr.o $(ODIR)/satellite.o
 	$(CC) $(LIBS) $(CFLAGS) -o $@ $^
