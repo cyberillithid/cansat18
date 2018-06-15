@@ -29,8 +29,6 @@
 
 #define        REG_VERSION	  					0x42
 
-const uint32_t CH_10_868 = 0xD84CCC; // channel 10, central freq = 865.20MHz
-
 //LORA MODES:
 const uint8_t LORA_SLEEP_MODE = 0x80;
 const uint8_t LORA_STANDBY_MODE = 0x81;

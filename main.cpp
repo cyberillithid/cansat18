@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 {
 	//parse options
 	// -- we don't have any
-	
+	printf("%d", argc);
 	// we catch the CTRL-C key
 	signal(SIGINT, INThandler);
 	signal(SIGTERM, INThandler);

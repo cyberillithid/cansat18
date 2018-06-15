@@ -18,7 +18,7 @@ void pthrow(const char* z) {
 	throw std::runtime_error(z);
 }
 
-LoRa::LoRa(const char* devAddr, uint8_t addr) { //"spidev1.0"
+LoRa::LoRa(const char* devAddr, uint8_t addr, uint32_t ch) { //"spidev1.0"
 	
 	mode = SPI_MODE_0;
 	//TODO: run RESET ?
@@ -39,6 +39,11 @@ LoRa::LoRa(const char* devAddr, uint8_t addr) { //"spidev1.0"
 		throw std::runtime_error("Unrecognized transceiver");
 	}
 	
+	if ((ch>>25)==54)
+		//433 MHz
+		;
+	//else ch>>25 == 108 -- 866 Mhz
+	
 		//TODO: RxChainCalibration();
 	setMaxCurrent();
 	setLORA();
@@ -47,7 +52,7 @@ LoRa::LoRa(const char* devAddr, uint8_t addr) { //"spidev1.0"
 	////start config
 	setMode(); ////lora mode = 1
 		// SIFS_cad_number=3; -- ???
-	setChannel(0xD84CCC); //// loraChannel = 0xD84CCC; //CH_10_868; 
+	setChannel(ch);
 	setPower(); // setPower('M'); //or 'X'
 	_nodeAddr = addr;
 	_packNo = 0;
