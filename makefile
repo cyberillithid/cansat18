@@ -16,6 +16,9 @@ all: receiver80 cansat80
 install: cansat80
 	config/install.sh
 
+install_low: cansat80
+	config/install.sh low
+	
 receiver80: $(OBJ_RAD) $(ODIR)/rcvr.o
 	$(CC) -lpthread $^ -o $@
 

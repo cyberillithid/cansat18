@@ -1,4 +1,4 @@
-VAL=$(pwd)/cansat80
+VAL=$(pwd)/cansat80 $1
 cd config
 #echo $VAL
 cp cansat18.sh c.sh.1
