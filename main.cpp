@@ -43,7 +43,7 @@ void getPkg(LoRa* lora, const char* tag) {
 				a.print();
 				fflush(stdout);
 			} catch (std::exception& e) {
-				std::cerr << e.what() << "\n";
+				std::cerr << tag << ": " << e.what() << "\n";
 			}
 			delete[] cur;
 		}
