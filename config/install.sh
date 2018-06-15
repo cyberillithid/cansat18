@@ -10,3 +10,4 @@ mv c.sh.1 /etc/init.d/cansat18
 touch /var/log/cansat18.log && chown pi /var/log/cansat18.log
 update-rc.d cansat18 defaults
 service cansat18 start
+systemctl enable cansat18

@@ -6,7 +6,7 @@
 
 const int _DBL_CNT=6;
 const int _3D_CNT=2;
-const int _INT_CNT=4;
+const int _INT_CNT=5;
 const int _dblOff = 2;
 const int _intOff = _dblOff + sizeof(double)*_DBL_CNT;
 const int _3dOff = _intOff + sizeof(uint32_t)*_INT_CNT;
@@ -49,6 +49,7 @@ DataPkg::DataPkg(char* buf, size_t len) {
 	temp = parInts[1];
 	pressure = parInts[2];
 	bmpTemp = parInts[3];
+	battery = parInts[4];
 	
 	double* parVecs = (double*)(buf+_3dOff);
 	magn = VecFromArr(parVecs);
@@ -61,7 +62,7 @@ size_t DataPkg::toBytes(char* buf, size_t buflen) {
 	buf[0] = _TYPE; //type
 	buf[1] = gps_mode;
 	double pars[_DBL_CNT] = {lat, lon, alt, speed, climb, gpstime}; //6*8 = 48
-	uint32_t parInts[_INT_CNT] = {time, temp, pressure, bmpTemp};
+	uint32_t parInts[_INT_CNT] = {time, temp, pressure, bmpTemp, battery};
 	double vecs[_3D_CNT*3];
 	VecToArr(magn, vecs); VecToArr(accel, vecs+3);
 	memcpy(buf+_dblOff, pars, sizeof(pars)); 
@@ -76,6 +77,9 @@ void DataPkg::print() {
 	printf("GPS Mode: %s\n", GPS_MODES[gps_mode]);
 	printf("Coordinates: %.4f, %.4f, %.4f\n", lat, lon, alt);
 	printf("Speed: %.4f m/s hor, %.4f m/s vert\n", speed, climb);
+	float volt = (uint16_t)(battery)*.078125/1000;
+	float cap = (battery>>16)/256.;
+	printf("Battery capacity: %.1f%%, voltage: %.1f V\n", cap, volt);
 	printf("Pi Time: %s", ctime((const time_t*)&time));
 	time_t f = (int)(gpstime);
 	printf("GPS Time: %.3lf + %s\n", (gpstime-f), ctime(&f));

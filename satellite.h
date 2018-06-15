@@ -4,6 +4,7 @@
 #include "sensors/Gyro_L3G4200D.h"
 #include "sensors/Baro_BMP085.h"
 
+
 class Satellite {
 private:
 	I2CBus i2cbus;
@@ -12,7 +13,7 @@ private:
 	Gyro_L3G4200D gyro;
 	Baro_BMP085 baro;
 	std::thread t1, *t2;
-	
+	I2CDev bat;
 	
 	std::atomic<bool> radio_stop;
 	

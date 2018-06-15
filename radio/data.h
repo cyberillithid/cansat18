@@ -14,6 +14,7 @@ struct DataPkg {
 	// Pi data block
 	uint32_t time; //4 byte
 	uint32_t temp; //4 byte
+	uint32_t battery;
 	// fetch LoRa temp?
 	// IMU/MPU data block
 	uint32_t pressure;

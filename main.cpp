@@ -17,10 +17,12 @@
 #define IS_RCVR false
 #define M_LOOP sat.loop
 #include "satellite.h"
-#endif
+#endif	
 
 void INThandler(int sig){
   printf("Bye.\n");
+  time_t t = time(NULL);
+  fprintf(stderr, "Finished work at %s", ctime(&t));
   exit(0);
 }
 
@@ -51,6 +53,7 @@ int main(int argc, char *argv[])
 	
 	// we catch the CTRL-C key
 	signal(SIGINT, INThandler);
+	signal(SIGTERM, INThandler);
 #ifdef SATELLITE
 	Satellite sat;
 #endif

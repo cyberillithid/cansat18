@@ -77,6 +77,7 @@ uint32_t fetchTemp() {
 Satellite::Satellite() : i2cbus("/dev/i2c-1"),
 		magneto(i2cbus),
 		accel(i2cbus), gyro(i2cbus), baro(i2cbus),
+		bat(i2cbus, 0x36)
 		t1(gps_thread)
 {
 	radio_stop=false;
@@ -131,6 +132,7 @@ DataPkg Satellite::buildPacket() {
 	magneto.fetchData(&ret.magn);
 	while (!accel.hasData());
 	accel.fetchData(&ret.accel);
+	bat.mb_read(2, 4, &ret.battery);
 	//printf("\t%.2f\n", ret.gpstime);
 	return ret;
 }
@@ -141,15 +143,22 @@ int Satellite::radio_thread() {
 	LoRa* lora;
 	lora = new LoRa("/dev/spidev0.0", SNDR_ADDR);
 	printf("LoRa Version: %d\n", lora->getVersion());
+	time_t t = time(NULL);
+	fprintf(stderr, "Started work at %s", ctime(&t));
+	fflush(stdout);
 	char buf[252];
+	int cnt = 0;
 	while (!radio_stop) {
 		//std::unique_lock<std::mutex> lk(mRadioPkg);
 		DataPkg pkg = buildPacket();
 		size_t slen = pkg.toBytes(buf, 252);
 		if (lora->sendPacketTimeout(radioDst, buf, slen, 4000)) {
-			printf("Packet sent successfully\n");
+			//printf("Packet sent successfully\n");
+			cnt++;
 		} else {
-			printf("Packet send failure\n");
+			t = time(NULL);
+			fprintf(stderr, "Packet send failure after %d successes at %s", cnt, ctime(&t));
+			cnt=0;
 		}
 		usleep(100000);
 	}
