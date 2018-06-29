@@ -145,9 +145,9 @@ const uint8_t radioDst = RCVR_ADDR;
 int Satellite::radio_thread() {
 	LoRa* lora;
 	if (isLoHF)
-		lora = new LoRa("/dev/spidev0.0", SNDR_ADDR, CH_01_433);
+		lora = new LoRa("/dev/spidev0.0", SNDR_ADDR, CH_433_80);
 	else
-		lora = new LoRa("/dev/spidev0.0", SNDR_ADDR);
+		lora = new LoRa("/dev/spidev0.0", SNDR_ADDR, CH_866_80);
 	printf("LoRa Version: %d\n", lora->getVersion());
 	time_t t = time(NULL);
 	fprintf(stderr, "Started work at %s", ctime(&t));

@@ -55,12 +55,12 @@ void getPkg(LoRa* lora, const char* tag) {
 void rcvloop(bool hf, bool lf) {
 	LoRa* loraHi, *loraLo;
 	if (hf) {
-		loraHi = new LoRa("/dev/spidev0.0", RCVR_ADDR);
+		loraHi = new LoRa("/dev/spidev0.0", RCVR_ADDR, CH_866_80);
 		printf("LoRa/Hi Version: %d\n", loraHi->getVersion());
 		loraHi->setLogLevel(3);
 	}
 	if (lf) {
-		loraLo = new LoRa("/dev/spidev1.0", RCVR_ADDR, CH_01_433);
+		loraLo = new LoRa("/dev/spidev1.0", RCVR_ADDR, CH_433_80);
 		printf("LoRa/Lo Version: %d\n", loraLo->getVersion());
 		loraLo->setLogLevel(3);
 	}

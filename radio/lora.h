@@ -25,6 +25,8 @@ const uint32_t CH_03_433 = 0x6CA5D4; //chanel 3 ,central freq = 434.59MHZ
 const uint32_t CH_04_433 = 0x6CB2A1; //chanel 4 ,central freq = 434.79MHZ
 const uint32_t CH_05_433 = 0x6D7F6E; //chanel 5 ,central freq = 437.99MHZ
 
+const uint32_t CH_433_80 = 0x6C7345; // freq = idx * 61.035 / 1M
+const uint32_t CH_866_80 = 0xD8B357;
 
 
 class LoRa {
