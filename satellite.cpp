@@ -22,10 +22,27 @@
 #include <mutex>
 #include "radio/data.h"
 #include "satellite.h"
+#include "sensors/DHT22.h"
+
+#ifdef ALUMEN
+#define HASDS false
+#else
+#define HASDS true
+#endif
 
 std::atomic<bool> gps_stop, gps_new, gps_hasData;
 std::mutex mGpsFix;
 gps_fix_t fix;
+
+std::atomic<uint32_t> dhtData;
+
+void dht_thread(){
+	DHT22 dht(2); //wPi pin 2 == BCM 27 == pin 13
+	while (!gps_stop) {
+		if (dht.fetch())
+			dhtData = __builtin_bswap32(dht.get());
+	}
+}
 
 int gps_thread() {
     gpsmm gps_rec("localhost", DEFAULT_GPSD_PORT);
@@ -74,10 +91,26 @@ uint32_t fetchTemp() {
 	return T;
 }
 
+uint32_t fetchTempDS(){
+	if (!HASDS) return 0;
+	FILE *devFile;
+	uint32_t T;
+	devFile = fopen ("/sys/bus/w1/devices/28-80000000eb1a/w1-slave", "r");
+	if (devFile == NULL)
+	return 0; //print some message
+	char crcConf[5];
+	fscanf(devFile, "%*x %*x %*x %*x %*x %*x %*x %*x %*x : crc=%*x %s", crcConf);
+	if (strncmp(crcConf, "YES", 3) == 0)
+		fscanf(devFile, "%*x %*x %*x %*x %*x %*x %*x %*x %*x t=%5d", &T);
+	fclose(devFile);
+	return T;
+}
+
 Satellite::Satellite(bool isLo) : isLoHF(isLo), i2cbus("/dev/i2c-1"),
 		magneto(i2cbus),
 		accel(i2cbus), gyro(i2cbus), baro(i2cbus),
-		t1(gps_thread), bat(i2cbus, 0x36)
+		t1(gps_thread), t3(dht_thread),
+		bat(i2cbus, 0x36)
 {
 	radio_stop=false;
 	accel.setup();
@@ -125,6 +158,7 @@ DataPkg Satellite::buildPacket() {
 	}
 	ret.time = time(NULL);
 	ret.temp = fetchTemp();
+	ret.tempDS = fetchTempDS();
 	baro.fetchData();
 	ret.pressure = baro.getPress();
 	ret.bmpTemp = baro.getTemp();

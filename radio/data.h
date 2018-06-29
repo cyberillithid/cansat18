@@ -14,11 +14,14 @@ struct DataPkg {
 	// Pi data block
 	uint32_t time; //4 byte
 	uint32_t temp; //4 byte
-	uint32_t battery;
+	uint32_t battery; //volt. incl.
 	// fetch LoRa temp?
 	// IMU/MPU data block
 	uint32_t pressure;
 	uint32_t bmpTemp;
+	//magical DHT/DS
+	uint32_t hum_tempDHT;
+	uint32_t tempDS;
 	// phi, r
 	// custom text
 	//static DataPkg fromBytes(char* pkg, size_t len);

@@ -6,7 +6,7 @@
 
 const int _DBL_CNT=6;
 const int _3D_CNT=2;
-const int _INT_CNT=5;
+const int _INT_CNT=7;
 const int _dblOff = 2;
 const int _intOff = _dblOff + sizeof(double)*_DBL_CNT;
 const int _3dOff = _intOff + sizeof(uint32_t)*_INT_CNT;
@@ -50,6 +50,8 @@ DataPkg::DataPkg(char* buf, size_t len) {
 	pressure = parInts[2];
 	bmpTemp = parInts[3];
 	battery = parInts[4];
+	hum_tempDHT = parInts[5];
+	tempDS = parInts[6];
 	
 	double* parVecs = (double*)(buf+_3dOff);
 	magn = VecFromArr(parVecs);
@@ -62,7 +64,7 @@ size_t DataPkg::toBytes(char* buf, size_t buflen) {
 	buf[0] = _TYPE; //type
 	buf[1] = gps_mode;
 	double pars[_DBL_CNT] = {lat, lon, alt, speed, climb, gpstime}; //6*8 = 48
-	uint32_t parInts[_INT_CNT] = {time, temp, pressure, bmpTemp, battery};
+	uint32_t parInts[_INT_CNT] = {time, temp, pressure, bmpTemp, battery, hum_tempDHT, tempDS};
 	double vecs[_3D_CNT*3];
 	VecToArr(magn, vecs); VecToArr(accel, vecs+3);
 	memcpy(buf+_dblOff, pars, sizeof(pars)); 
@@ -82,8 +84,14 @@ void DataPkg::print() {
 	printf("Battery capacity: %.1f%%, voltage: %.1f V\n", cap, volt);
 	printf("Pi Time: %s", ctime((const time_t*)&time));
 	time_t f = (int)(gpstime);
+	int16_t dhtTemp = (int16_t)hum_tempDHT;
+	dhtTemp = ((dhtTemp & 0x8000) == 0) ? dhtTemp : (dhtTemp ^ 0x8000)*(-1);
+	uint16_t dhtHum = hum_tempDHT >> 16;
+	
 	printf("GPS Time: %.3lf + %s\n", (gpstime-f), ctime(&f));
-	printf("Temperature: %.3lf @Pi, %.1lf @BMP\n", (temp*0.001), (bmpTemp*0.1));
+	printf("Temperature: %.3lf @Pi, %.3lf @DS, %1.lf @DHT, %.1lf @BMP\n", (temp*0.001),
+			(tempDS*0.001), (dhtTemp*0.1), (bmpTemp*0.1));
+	printf("Humidity: %.1lf\n", dhtHum*0.1);
 	printf("Pressure: %.2lf hPa\n", (pressure*0.01));
 	printf("Magnetic field: X: %.2fGa\tY: %.2fGa\tZ: %.2fGa\n", magn.x*0.001, magn.y*0.001, magn.z*0.001);
 	printf("Acceleration: X: %.2fg\tY: %.2fg\tZ: %.2fg\n", accel.x*0.001, 
