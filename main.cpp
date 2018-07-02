@@ -34,7 +34,7 @@ void INThandler(int sig){
 
 #ifndef SATELLITE
 void getPkg(LoRa* lora, const char* tag) {
-	char fs[256] = "~/log.";
+	char fs[256] = "/home/pi/log.";
 	strcat(fs, tag);
 	FILE* logfile = fopen(fs, "wb");
 	while (!dieRcvr) {

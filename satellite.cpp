@@ -188,8 +188,8 @@ const uint8_t radioDst = RCVR_ADDR;
 
 
 int Satellite::sensors_thread() {
-	FILE* accfile = fopen("~/acc.dat", "wb");
-	FILE* gyrfile = fopen("~/gyr.dat", "wb");
+	FILE* accfile = fopen("/home/pi/acc.dat", "wb");
+	FILE* gyrfile = fopen("/home/pi/gyr.dat", "wb");
 	Timed3D data;
 	while (!radio_stop) {
 		clock_gettime(CLOCK_REALTIME, &(data.ts));
@@ -211,7 +211,7 @@ int Satellite::sensors_thread() {
 
 int Satellite::radio_thread() {
 	LoRa* lora;
-	FILE* logfile = fopen("~/radio.log", "wb");
+	FILE* logfile = fopen("/home/pi/radio.log", "wb");
 	if (isLoHF)
 		lora = new LoRa("/dev/spidev0.0", SNDR_ADDR, CH_433_80);
 	else
