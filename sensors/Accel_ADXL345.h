@@ -11,12 +11,14 @@ private:
 	double resol; //256 LSB per g
 	// I2C -> max for fast 800 Hz, slow 200 Hz
 	double rate; // .1 Hz -> 3200 Hz; <6.3 & >1600 - diff; 
+	int16_t raw[3];
 public:
 	Accel_ADXL345(I2CBus& bus);
 
 	void setOffsets(Vec3D& d);
 	
 	bool hasData();
+	void getRaw(void *d);
 	bool fetchData(Vec3D* v);
 	void setup();
 };

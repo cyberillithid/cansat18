@@ -4,8 +4,12 @@
 Accel_ADXL345::Accel_ADXL345(I2CBus& bus): I2CDev(bus, 0x53) {
 	whoami_reg = 0; whoami_val = 0xE5;
 }
+
+void Accel_ADXL345::getRaw(void * d){
+	memcpy(d, raw, 6);
+}
 bool Accel_ADXL345::fetchData(Vec3D* v) {
-	int16_t raw[3];
+	//int16_t raw[3];
 	mb_read(0x32, 6, (uint8_t*)(&raw));
 	v->x = raw[0]*resol;
 	v->y = raw[1]*resol;

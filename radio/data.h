@@ -34,5 +34,5 @@ struct DataPkg {
 
 struct Timed3D{
     struct timespec ts;
-    Vec3D data;
+    uint8_t data;
 };

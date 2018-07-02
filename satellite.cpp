@@ -191,16 +191,19 @@ int Satellite::sensors_thread() {
 	FILE* accfile = fopen("/home/pi/acc.dat", "wb");
 	FILE* gyrfile = fopen("/home/pi/gyr.dat", "wb");
 	Timed3D data;
+	Vec3D tmp;
 	while (!radio_stop) {
 		clock_gettime(CLOCK_REALTIME, &(data.ts));
 		if (accel.hasData())
 		{
-			accel.fetchData(&(data.data));
-			acc = data.data;
+			accel.fetchData(&tmp);
+			acc = tmp;
+			accel.getRaw(&(data.data));
 			fwrite(&data, sizeof(Timed3D), 1, accfile);
 		}
 		if (gyro.hasData()) {
-			gyro.fetchData(&(data.data));
+			gyro.fetchData(&tmp);
+			gyro.getRaw(&(data.data));
 			fwrite(&data, sizeof(Timed3D), 1, gyrfile);
 		}
 	}

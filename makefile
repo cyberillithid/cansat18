@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-Wall -I. -std=c++11
+CFLAGS=-Wall -I. -std=c++11 -O2 
 
 ODIR=obj
 

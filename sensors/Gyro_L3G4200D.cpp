@@ -12,8 +12,11 @@ bool Gyro_L3G4200D::hasData() {
 	return ((b_read(0x27) & 0x8) == 8);
 }
 
+void Gyro_L3G4200D::getRaw(void* d){
+	memcpy(d, raw, 6);
+}
+
 bool Gyro_L3G4200D::fetchData(Vec3D* v) {
-	int16_t raw[3];
 	mb_read(0x28, 6, (uint8_t*)raw);
 	v->x = raw[0]*rate;
 	v->y = raw[1]*rate;
