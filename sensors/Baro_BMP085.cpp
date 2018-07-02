@@ -58,8 +58,8 @@ bool Baro_BMP085::fetchData() {
 	pres = p + ((X1 + X2 + (int32_t)3791)>>4);
 	return true;
 }
-long Baro_BMP085::getTemp() {return temp;}
-long Baro_BMP085::getPress(){return pres;}
+long Baro_BMP085::getTemp() const {return temp;}
+long Baro_BMP085::getPress() const {return pres;}
 
 /*
 

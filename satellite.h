@@ -20,7 +20,7 @@ private:
 	
 	std::atomic<Vec3D> acc;
 	
-	int radio_thread();　
+	int radio_thread();
 	int sensors_thread();
 	DataPkg buildPacket();
 public:
