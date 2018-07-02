@@ -34,6 +34,9 @@ void INThandler(int sig){
 
 #ifndef SATELLITE
 void getPkg(LoRa* lora, const char* tag) {
+	char fs[256] = "~/log.";
+	strcat(fs, tag);
+	FILE* logfile = fopen(fs, "wb");
 	while (!dieRcvr) {
 		char* cur = lora->receiveAll(5000);
 		if (cur != nullptr) {
@@ -41,6 +44,7 @@ void getPkg(LoRa* lora, const char* tag) {
 				printf("%s: ", tag);
 				DataPkg a(cur, lora->getLength());
 				a.print();
+				fwrite(&a, sizeof(DataPkg), 1, logfile);
 				fflush(stdout);
 			} catch (std::exception& e) {
 				std::cerr << tag << ": " << e.what() << "\n";
@@ -48,6 +52,7 @@ void getPkg(LoRa* lora, const char* tag) {
 			delete[] cur;
 		}
 	}
+	fclose(logfile);
 	printf("%s finished\n",tag);
 	delete lora;
 }

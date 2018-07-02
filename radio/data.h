@@ -1,6 +1,7 @@
 #pragma once
 #include <stdlib.h>
 #include <stdint.h>
+#include <time.h>
 #include "../sensors/sens.h" 
 //TODO: better naming?
 
@@ -31,3 +32,7 @@ struct DataPkg {
 	void print();
 };
 
+struct Timed3D{
+    struct timespec ts;
+    Vec3D data;
+};

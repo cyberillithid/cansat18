@@ -12,7 +12,7 @@ private:
 public:
 	Baro_BMP085(I2CBus& bus);
 	bool fetchData();
-	long getTemp();
-	long getPress();
+	long getTemp() const;
+	long getPress() const;
 };
 

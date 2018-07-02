@@ -13,12 +13,15 @@ private:
 	Accel_ADXL345 accel;
 	Gyro_L3G4200D gyro;
 	Baro_BMP085 baro;
-	std::thread t1, *t2, t3;
+	std::thread thrGPS, *thrRadio, thrDHT, *thrSens;
 	I2CDev bat;
 	
 	std::atomic<bool> radio_stop;
 	
-	int radio_thread();
+	std::atomic<Vec3D> acc;
+	
+	int radio_thread();　
+	int sensors_thread();
 	DataPkg buildPacket();
 public:
 	Satellite(bool isLo);

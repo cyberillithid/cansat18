@@ -8,7 +8,6 @@
 DHT22::DHT22(int wPin){
 	pin = wPin;
 	retries = 0;
-	pinMode(pin, OUTPUT);
 }
 
 static uint8_t sizecvt(const int read)
@@ -27,6 +26,7 @@ bool DHT22::fetch() {
 	uint8_t laststate = HIGH;
 	uint8_t j = 0, i;
 	uint8_t counter = 0;  
+  pinMode(pin, OUTPUT);
 	digitalWrite(pin, HIGH);
 	delay(10);
 	digitalWrite(pin, LOW);
@@ -77,7 +77,7 @@ bool DHT22::fetch() {
     printf("Humidity = %.2f %% Temperature = %.2f *C \n", h, t );*/
     return true;
   }
-  else
+  retries++;
 	return false;
 }
 

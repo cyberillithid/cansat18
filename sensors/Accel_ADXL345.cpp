@@ -40,8 +40,6 @@ void Accel_ADXL345::setup() {
 }
 
 /*
-
-
 int accel_test() {
 	// 0.1 sec of data [cf Hz]
 	// avg -> minus -> setOffset
@@ -66,5 +64,4 @@ int accel_test() {
 	}
 	return 0;
 }
-
 */

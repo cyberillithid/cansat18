@@ -95,7 +95,7 @@ uint32_t fetchTempDS(){
 	if (!HASDS) return 0;
 	FILE *devFile;
 	uint32_t T;
-	devFile = fopen ("/sys/bus/w1/devices/28-80000000eb1a/w1-slave", "r");
+	devFile = fopen ("/sys/bus/w1/devices/28-80000000eb1a/w1_slave", "r");
 	if (devFile == NULL)
 	return 0; //print some message
 	char crcConf[5];
@@ -109,13 +109,14 @@ uint32_t fetchTempDS(){
 Satellite::Satellite(bool isLo) : isLoHF(isLo), i2cbus("/dev/i2c-1"),
 		magneto(i2cbus),
 		accel(i2cbus), gyro(i2cbus), baro(i2cbus),
-		t1(gps_thread), t3(dht_thread),
+		thrGPS(gps_thread), thrDHT(dht_thread),
 		bat(i2cbus, 0x36)
 {
 	radio_stop=false;
 	accel.setup();
 	magneto.setup();
-	t2 = new std::thread(&Satellite::radio_thread, this);
+	thrRadio = new std::thread(&Satellite::radio_thread, this);
+	thrSens = new std::thread(&Satellite::sensors_thread, this);
 }
 void Satellite::loop() {
 		while (!gps_stop) {
@@ -140,6 +141,10 @@ Satellite::~Satellite() {
 	delete t2;
 }
 
+/*
+Gyro: 6b per 100 Hz
+*/
+
 DataPkg Satellite::buildPacket() {
 	DataPkg ret;
 	if (gps_hasData) {
@@ -159,12 +164,14 @@ DataPkg Satellite::buildPacket() {
 	ret.time = time(NULL);
 	ret.temp = fetchTemp();
 	ret.tempDS = fetchTempDS();
+
 	baro.fetchData();
 	ret.pressure = baro.getPress();
 	ret.bmpTemp = baro.getTemp();
 	magneto.fetchData(&ret.magn);
-	while (!accel.hasData());
-	accel.fetchData(&ret.accel);
+
+	ret.accel = acc;
+	
 	uint16_t volt, cap;
 	bat.mb_read(2, 2, (uint8_t*)&volt);
 	bat.mb_read(4, 2, (uint8_t*)&cap);
@@ -176,8 +183,31 @@ DataPkg Satellite::buildPacket() {
 
 const uint8_t radioDst = RCVR_ADDR;
 
+
+int Satellite::sensors_thread() {
+	FILE* accfile = fopen("~/acc.dat", "wb");
+	FILE* gyrfile = fopen("~/gyr.dat", "wb");
+	Timed3D data;
+	while (!radio_stop) {
+		clock_gettime(CLOCK_REALTIME, &(data.time));
+		if (accel.hasData())
+		{
+			accel.fetchData(&(data.data));
+			acc = data.data;
+			fwrite(&data, sizeof(Timed3D), 1, accfile);
+		}
+		if (gyro.hasData()) {
+			gyro.fetchData(&(data.data));
+			fwrite(&data, sizeof(Timed3D), 1, gyrfile);
+		}
+	}
+	fclose(accfile);
+	fclose(gyrfile);
+}
+
 int Satellite::radio_thread() {
 	LoRa* lora;
+	FILE* logfile = fopen("~/radio.log", "wb");
 	if (isLoHF)
 		lora = new LoRa("/dev/spidev0.0", SNDR_ADDR, CH_433_80);
 	else
@@ -192,6 +222,7 @@ int Satellite::radio_thread() {
 		//std::unique_lock<std::mutex> lk(mRadioPkg);
 		DataPkg pkg = buildPacket();
 		size_t slen = pkg.toBytes(buf, 252);
+		fwrite(&pkg, sizeof(DataPkg), 1, logfile);
 		if (lora->sendPacketTimeout(radioDst, buf, slen, 4000)) {
 			//printf("Packet sent successfully\n");
 			cnt++;
@@ -202,5 +233,6 @@ int Satellite::radio_thread() {
 		}
 		usleep(100000);
 	}
+	fclose(logfile);
 	return 0;
 }
