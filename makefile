@@ -9,7 +9,7 @@ OBJ_RAD = $(patsubst %,$(ODIR)/radio/%,$(_OBJ_RAD))
 _OBJ_SENS = devices.o Magnet_HMC5883L.o Accel_ADXL345.o Gyro_L3G4200D.o Baro_BMP085.o DHT22.o
 OBJ_SENS = $(patsubst %,$(ODIR)/sensors/%,$(_OBJ_SENS))
 
-LIBS = -lgps -lpthread -lwiringPi
+LIBS = -lgps -lpthread -lwiringPi -latomic
 
 all: receiver80 cansat80
 

@@ -136,9 +136,12 @@ void Satellite::loop() {
 	}
 }
 Satellite::~Satellite() {
-	t1.join();
-	t2->join();
-	delete t2;
+	thrGPS.join();
+	thrRadio->join();
+	thrDHT.join();
+	thrSens->join();
+	delete thrRadio;
+	delete thrSens;
 }
 
 /*
@@ -189,7 +192,7 @@ int Satellite::sensors_thread() {
 	FILE* gyrfile = fopen("~/gyr.dat", "wb");
 	Timed3D data;
 	while (!radio_stop) {
-		clock_gettime(CLOCK_REALTIME, &(data.time));
+		clock_gettime(CLOCK_REALTIME, &(data.ts));
 		if (accel.hasData())
 		{
 			accel.fetchData(&(data.data));
@@ -203,6 +206,7 @@ int Satellite::sensors_thread() {
 	}
 	fclose(accfile);
 	fclose(gyrfile);
+	return 0;
 }
 
 int Satellite::radio_thread() {
