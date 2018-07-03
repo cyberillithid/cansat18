@@ -1,11 +1,13 @@
 #include "Accel_ADXL345.h"
 #include <math.h>
+#include <string.h>
 
 Accel_ADXL345::Accel_ADXL345(I2CBus& bus): I2CDev(bus, 0x53) {
 	whoami_reg = 0; whoami_val = 0xE5;
 }
 
-void Accel_ADXL345::getRaw(void * d){
+void Accel_ADXL345::fetchRaw(void * d){
+	mb_read(0x32, 6, (uint8_t*)(&raw));
 	memcpy(d, raw, 6);
 }
 bool Accel_ADXL345::fetchData(Vec3D* v) {
@@ -15,6 +17,11 @@ bool Accel_ADXL345::fetchData(Vec3D* v) {
 	v->y = raw[1]*resol;
 	v->z = raw[2]*resol;
 	return true;
+}
+void Accel_ADXL345::getData(Vec3D* v) {
+	v->x = raw[0]*resol;
+	v->y = raw[1]*resol;
+	v->z = raw[2]*resol;
 }
 bool Accel_ADXL345::hasData() {
 	return ((b_read(0x30) & 0x80) == 0x80);

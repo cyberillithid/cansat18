@@ -18,7 +18,8 @@ public:
 	void setOffsets(Vec3D& d);
 	
 	bool hasData();
-	void getRaw(void *d);
+	void fetchRaw(void *d);
+	void getData(Vec3D* v);
 	bool fetchData(Vec3D* v);
 	void setup();
 };

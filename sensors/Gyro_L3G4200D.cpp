@@ -1,4 +1,5 @@
 #include "Gyro_L3G4200D.h"
+#include <string.h>
 
 Gyro_L3G4200D::Gyro_L3G4200D(I2CBus& bus) : 
 	I2CDev(bus, 0x69)
@@ -12,7 +13,8 @@ bool Gyro_L3G4200D::hasData() {
 	return ((b_read(0x27) & 0x8) == 8);
 }
 
-void Gyro_L3G4200D::getRaw(void* d){
+void Gyro_L3G4200D::fetchRaw(void* d){
+	mb_read(0x28, 6, (uint8_t*)raw);
 	memcpy(d, raw, 6);
 }
 

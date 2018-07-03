@@ -173,7 +173,7 @@ DataPkg Satellite::buildPacket() {
 	ret.bmpTemp = baro.getTemp();
 	magneto.fetchData(&ret.magn);
 
-	ret.accel = acc;
+	accel.getData(&ret.accel);
 	
 	uint16_t volt, cap;
 	bat.mb_read(2, 2, (uint8_t*)&volt);
@@ -191,24 +191,44 @@ int Satellite::sensors_thread() {
 	FILE* accfile = fopen("/home/pi/acc.dat", "wb");
 	FILE* gyrfile = fopen("/home/pi/gyr.dat", "wb");
 	Timed3D data;
-	Vec3D tmp;
+	bool was_falling = false, landed = false;
+	//Vec3D tmp;
 	while (!radio_stop) {
+		//usleep(50000); //TEST
+
 		clock_gettime(CLOCK_REALTIME, &(data.ts));
 		if (accel.hasData())
 		{
-			accel.fetchData(&tmp);
-			acc = tmp;
-			accel.getRaw(&(data.data));
+			//accel.fetchData(&tmp);
+			//acc = tmp;
+			accel.fetchRaw(&(data.data));
+			int16_t* rd = (int16_t*) &(data.data);
+			int32_t a = rd[0];
+			int32_t b = rd[1];
+			int32_t c = rd[2];
+			int32_t m = a*a + b*b + c*c;
+			//printf("%0X g^2\n", m);
+			if (!landed) {
+			  if ((m < 0x200) && (!was_falling)){
+				was_falling = true;
+				cam.run_cam("fall");
+			  }
+			  if ((m > 0x1000) && (was_falling)){ 
+				landed = true;
+				cam.run_cam("land");
+			  }
+			}
 			fwrite(&data, sizeof(Timed3D), 1, accfile);
 		}
 		if (gyro.hasData()) {
-			gyro.fetchData(&tmp);
-			gyro.getRaw(&(data.data));
+			//gyro.fetchData(&tmp);
+			gyro.fetchRaw(&(data.data));
 			fwrite(&data, sizeof(Timed3D), 1, gyrfile);
 		}
 	}
 	fclose(accfile);
 	fclose(gyrfile);
+	cam.die();
 	return 0;
 }
 

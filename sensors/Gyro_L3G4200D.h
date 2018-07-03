@@ -10,7 +10,7 @@ public:
 	 Gyro_L3G4200D(I2CBus& bus);
 	 uint8_t getTemp();
 	 bool hasData();
-	 void getRaw(void* d);
+	 void fetchRaw(void* d);
 	 bool fetchData(Vec3D* v);
 	 void setup();
 };

@@ -3,7 +3,7 @@
 #include "sensors/Accel_ADXL345.h"
 #include "sensors/Gyro_L3G4200D.h"
 #include "sensors/Baro_BMP085.h"
-
+#include "sensors/picam.h"
 
 class Satellite {
 private:
@@ -15,10 +15,11 @@ private:
 	Baro_BMP085 baro;
 	std::thread thrGPS, *thrRadio, thrDHT, *thrSens;
 	I2CDev bat;
-	
+	PiCam cam;
+
 	std::atomic<bool> radio_stop;
 	
-	std::atomic<Vec3D> acc;
+	//std::atomic<Vec3D> acc;
 	
 	int radio_thread();
 	int sensors_thread();
