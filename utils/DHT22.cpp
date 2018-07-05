@@ -93,10 +93,15 @@ int main (int argc, char** argv){
 	if (setuid(getuid()) < 0)
 		exit(1);
 	DHT22 d(2);
-//	FILE* f = fopen(
+	FILE* f = fopen("/home/pi/dht.dat", "wb");
 	while (true) {
 		while (!d.fetch()) sleep(1);
-		printf("%X\n", d.get());
+		int t = time(NULL);
+		uint32_t v = d.get();
+//		printf("%X\n", d.get());
+		fwrite(&t, 1, sizeof(t), f);
+		fwrite(&v, 1, sizeof(v), f);
+		fflush(f);
 		sleep(2);
 	}
 
