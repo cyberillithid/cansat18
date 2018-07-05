@@ -13,7 +13,7 @@ private:
 	Accel_ADXL345 accel;
 	Gyro_L3G4200D gyro;
 	Baro_BMP085 baro;
-	std::thread thrGPS, *thrRadio, thrDHT, *thrSens;
+	std::thread thrGPS, *thrRadio, *thrSens;
 	I2CDev bat;
 	PiCam cam;
 

@@ -22,7 +22,7 @@
 #include <mutex>
 #include "radio/data.h"
 #include "satellite.h"
-#include "sensors/DHT22.h"
+//#include "sensors/DHT22.h"
 
 #ifdef ALUMEN
 #define HASDS false
@@ -34,7 +34,7 @@ std::atomic<bool> gps_stop, gps_new, gps_hasData;
 std::mutex mGpsFix;
 gps_fix_t fix;
 
-std::atomic<uint32_t> dhtData;
+/*std::atomic<uint32_t> dhtData;
 
 void dht_thread(){
 	DHT22 dht(2); //wPi pin 2 == BCM 27 == pin 13
@@ -42,7 +42,7 @@ void dht_thread(){
 		if (dht.fetch())
 			dhtData = __builtin_bswap32(dht.get());
 	}
-}
+}*/
 
 int gps_thread() {
     gpsmm gps_rec("localhost", DEFAULT_GPSD_PORT);
@@ -109,7 +109,7 @@ uint32_t fetchTempDS(){
 Satellite::Satellite(bool isLo) : isLoHF(isLo), i2cbus("/dev/i2c-1"),
 		magneto(i2cbus),
 		accel(i2cbus), gyro(i2cbus), baro(i2cbus),
-		thrGPS(gps_thread), thrDHT(dht_thread),
+		thrGPS(gps_thread), //thrDHT(dht_thread),
 		bat(i2cbus, 0x36)
 {
 	radio_stop=false;
@@ -138,7 +138,7 @@ void Satellite::loop() {
 Satellite::~Satellite() {
 	thrGPS.join();
 	thrRadio->join();
-	thrDHT.join();
+//	thrDHT.join();
 	thrSens->join();
 	delete thrRadio;
 	delete thrSens;
@@ -208,7 +208,7 @@ int Satellite::sensors_thread() {
 			int32_t c = rd[2];
 			int32_t m = a*a + b*b + c*c;
 			//printf("%0X g^2\n", m);
-			if (!landed) {
+/*			if (!landed) {
 			  if ((m < 0x200) && (!was_falling)){
 				was_falling = true;
 				cam.run_cam("fall");
@@ -217,7 +217,7 @@ int Satellite::sensors_thread() {
 				landed = true;
 				cam.run_cam("land");
 			  }
-			}
+			}*/
 			fwrite(&data, sizeof(Timed3D), 1, accfile);
 		}
 		if (gyro.hasData()) {
@@ -228,7 +228,7 @@ int Satellite::sensors_thread() {
 	}
 	fclose(accfile);
 	fclose(gyrfile);
-	cam.die();
+	cam.stop();
 	return 0;
 }
 

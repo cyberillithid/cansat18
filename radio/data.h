@@ -21,7 +21,7 @@ struct DataPkg {
 	uint32_t pressure;
 	uint32_t bmpTemp;
 	//magical DHT/DS
-	uint32_t hum_tempDHT;
+//	uint32_t hum_tempDHT;
 	uint32_t tempDS;
 	// phi, r
 	// custom text

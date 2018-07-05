@@ -2,6 +2,7 @@
 #include "DHT22.h"
 #include <exception>
 #include <stdexcept> 
+#include <stdio.h>
 
 #define MAXTIMINGS 85
 
@@ -83,4 +84,20 @@ bool DHT22::fetch() {
 
 uint32_t DHT22::get() {
 	return val;
+}
+
+
+int main (int argc, char** argv){
+	if (wiringPiSetup() == -1)
+		exit(1);
+	if (setuid(getuid()) < 0)
+		exit(1);
+	DHT22 d(2);
+//	FILE* f = fopen(
+	while (true) {
+		while (!d.fetch()) sleep(1);
+		printf("%X\n", d.get());
+		sleep(2);
+	}
+
 }

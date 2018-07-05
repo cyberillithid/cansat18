@@ -1,18 +1,19 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <raspicam/raspicam.h>
 class PiCam {
 private:
-	std::vector<std::thread> jobs;
+	std::thread *thr;
 	raspicam::RaspiCam camera;
 	size_t sz, width, height;
 	bool isYuv;
-	std::mutex m;
-	void cam_thr(const char* t, int fr);
+	std::atomic<bool> die;
+	void run();
+	void take(char* fn);
 public:
 	PiCam();
-	void run_cam (const char* tag, int frames=1);
-	void die();
+	void stop();
 	~PiCam();
 };

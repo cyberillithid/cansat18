@@ -6,10 +6,10 @@ ODIR=obj
 _OBJ_RAD = lora.o data.o 
 OBJ_RAD = $(patsubst %,$(ODIR)/radio/%,$(_OBJ_RAD))
 
-_OBJ_SENS = devices.o Magnet_HMC5883L.o Accel_ADXL345.o Gyro_L3G4200D.o Baro_BMP085.o DHT22.o picam.o
+_OBJ_SENS = devices.o Magnet_HMC5883L.o Accel_ADXL345.o Gyro_L3G4200D.o Baro_BMP085.o picam.o
 OBJ_SENS = $(patsubst %,$(ODIR)/sensors/%,$(_OBJ_SENS))
 
-LIBS = -lgps -lpthread -lwiringPi -latomic -lraspicam
+LIBS = -lgps -lpthread -latomic -lraspicam -ljpeg
 
 all: receiver80 cansat80
 
