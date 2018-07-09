@@ -1,5 +1,7 @@
 # Moscow-80 CanSat 2018 source code
 
+Results of the run: https://yadi.sk/d/OKn6ciK43YxstM
+
 Raspberry Pi v.3
 GY-80
 u-blox NEO7-M
